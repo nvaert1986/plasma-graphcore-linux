@@ -9,6 +9,7 @@
 - Graph errors and the service's problems as clear messages that say what to do, the same in every
   app (`GraphResponse::userMessage`, `GraphCore::Errors`), with Dutch translations: the core has its
   own translation catalog now (`plasma-graphcore-linux`).
+- `Connectivity::Watcher`: signals when the network comes back or a connection becomes metered.
 
 ## 0.13.0 (2026-11-17)
 

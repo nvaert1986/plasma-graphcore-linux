@@ -40,4 +40,34 @@ bool isMetered()
     return info && info->supports(QNetworkInformation::Feature::Metered) && info->isMetered();
 }
 
+Watcher::Watcher(QObject *parent)
+    : QObject(parent)
+    , m_online(systemReportsOnline())
+{
+    QNetworkInformation *info = information();
+    if (!info) {
+        return;
+    }
+    connect(info, &QNetworkInformation::reachabilityChanged, this, [this] {
+        const bool online = systemReportsOnline();
+        if (online != m_online) {
+            m_online = online;
+            Q_EMIT onlineChanged(online);
+        }
+    });
+    if (info->supports(QNetworkInformation::Feature::Metered)) {
+        connect(info, &QNetworkInformation::isMeteredChanged, this, &Watcher::meteredChanged);
+    }
+}
+
+bool Watcher::isOnline() const
+{
+    return m_online;
+}
+
+bool Watcher::isMetered() const
+{
+    return Connectivity::isMetered();
+}
+
 }

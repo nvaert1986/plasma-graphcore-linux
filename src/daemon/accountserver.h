@@ -60,7 +60,8 @@ Q_SIGNALS:
 
 private:
     struct State;
-    bool callerAllowed();
+    // tokens: AccessToken (the suite's programs only); else account management (also System Settings)
+    bool callerAllowed(bool tokens = false);
     // The account's state, made (again) when the account is new or changed in graphaccountsrc
     std::shared_ptr<State> stateFor(const QString &id);
     void setStatus(const std::shared_ptr<State> &state, const QString &status, const QString &problem);
@@ -74,7 +75,9 @@ private:
     void notifySignInNeeded(const std::shared_ptr<State> &state, const QString &problem);
 
     CallerCheck::Allowed m_allowed;
-    QHash<QString, bool> m_callers;
+    CallerCheck::Allowed m_managers;
+    // By unique bus name: 0 refused, 1 manages accounts, 2 a program of the suite
+    QHash<QString, int> m_callers;
     QHash<QString, std::shared_ptr<State>> m_states;
     QHash<QString, std::shared_ptr<std::atomic_bool>> m_signIns;
     // The open "Sign in again" notifications by account; closed once the account works again

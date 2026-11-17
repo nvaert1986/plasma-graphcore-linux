@@ -155,3 +155,5 @@ install(FILES ${CMAKE_SOURCE_DIR}/data/plasma-graphcore-linux.notifyrc DESTINATI
 add_executable(graphaccountsctl ctl/main.cpp)
 target_link_libraries(graphaccountsctl PRIVATE graphcore)
 install(TARGETS graphaccountsctl ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
+
+add_subdirectory(kcm)

@@ -13,6 +13,10 @@
 - One "Sign in again" notification per account for the whole suite, from the account service, with
   a Sign In button (the account's address filled in); "Approval needed" when an administrator has to
   approve the apps. It closes by itself once the account works again. The apps no longer show their own.
+- System Settings > Network > Microsoft 365 Accounts (`kcm_graphaccounts`): the suite's accounts with
+  their state, Add Account (browser or code, an organisation's own registration, the approval link when
+  an administrator has to approve), Sign In Again, Sign Out for every app. System Settings may manage
+  accounts through the service but never gets a token.
 
 ## 0.13.0 (2026-11-17)
 

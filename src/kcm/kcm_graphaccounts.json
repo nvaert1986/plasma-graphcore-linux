@@ -1,0 +1,12 @@
+{
+    "KPlugin": {
+        "Description": "Work accounts shared by the Microsoft 365 apps of the suite",
+        "Description[nl]": "Werkaccounts die de Microsoft 365-apps van de suite delen",
+        "Icon": "system-users",
+        "Name": "Microsoft 365 Accounts",
+        "Name[nl]": "Microsoft 365-accounts"
+    },
+    "X-KDE-Keywords": "Microsoft 365,Office 365,Exchange,OneDrive,SharePoint,account,sign in,work account,Entra ID,Graph",
+    "X-KDE-Keywords[nl]": "Microsoft 365,Office 365,Exchange,OneDrive,SharePoint,account,aanmelden,werkaccount,Entra ID,Graph",
+    "X-KDE-System-Settings-Parent-Category": "network"
+}

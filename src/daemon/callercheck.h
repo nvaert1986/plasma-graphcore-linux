@@ -14,6 +14,9 @@ namespace GraphCore::CallerCheck
 
 // The suite's programs, by file name
 QStringList programNames();
+// Programs that only manage accounts (list, sign in, sign out), never get a token: System Settings
+// and kcmshell6, for the Microsoft 365 Accounts page
+QStringList managerNames();
 
 // The executables allowed: every program name in each directory, plus extra entries (from
 // graphaccountsrc [Development] AllowedExecutables): a path ending in "/" allows every file
@@ -22,7 +25,7 @@ struct Allowed {
     QStringList files;
     QStringList directories;
 };
-Allowed allowedFor(const QStringList &directories, const QStringList &extra);
+Allowed allowedFor(const QStringList &directories, const QStringList &extra, const QStringList &names = programNames());
 
 // The executable of a running process (/proc/<pid>/exe); a binary replaced by a reinstall since it
 // started (" (deleted)") still counts as its path. Empty when it cannot be read

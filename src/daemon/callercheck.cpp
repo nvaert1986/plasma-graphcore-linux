@@ -26,10 +26,14 @@ QStringList programNames()
     };
 }
 
-Allowed allowedFor(const QStringList &directories, const QStringList &extra)
+QStringList managerNames()
+{
+    return {QStringLiteral("systemsettings"), QStringLiteral("kcmshell6")};
+}
+
+Allowed allowedFor(const QStringList &directories, const QStringList &extra, const QStringList &names)
 {
     Allowed allowed;
-    const QStringList names = programNames();
     for (const QString &directory : directories) {
         if (directory.isEmpty()) {
             continue;

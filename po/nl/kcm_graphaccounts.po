@@ -1,0 +1,140 @@
+# Dutch translation of kcm_graphaccounts
+# SPDX-FileCopyrightText: 2026 plasma-graphcore-linux contributors
+# SPDX-License-Identifier: GPL-3.0-or-later
+msgid ""
+msgstr ""
+"Project-Id-Version: kcm_graphaccounts\n"
+"PO-Revision-Date: 2026-11-17 13:42+0100\n"
+"Last-Translator: plasma-graphcore-linux contributors\n"
+"Language-Team: Dutch\n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+msgctxt "@info:status account"
+msgid "Signed in"
+msgstr "Aangemeld"
+
+msgctxt "@info:status account"
+msgid "Sign-in needed"
+msgstr "Aanmelden nodig"
+
+msgctxt "@info:status account"
+msgid "Wallet locked"
+msgstr "Portefeuille vergrendeld"
+
+msgctxt "@info:status account"
+msgid "Signed out"
+msgstr "Afgemeld"
+
+msgctxt "@info"
+msgid "Enter your work e-mail address."
+msgstr "Voer je zakelijke e-mailadres in."
+
+msgctxt "@info"
+msgid "Your organisation has not approved the Microsoft 365 apps of this suite yet. An administrator of the organisation opens the approval page once, signs in and accepts; then sign in again here."
+msgstr "Je organisatie heeft de Microsoft 365-apps van deze suite nog niet goedgekeurd. Een beheerder van de organisatie opent eenmalig de goedkeuringspagina, meldt zich aan en accepteert; meld je daarna hier opnieuw aan."
+
+msgctxt "@info"
+msgid "No Microsoft 365 organisation uses this address. Check the address."
+msgstr "Geen enkele Microsoft 365-organisatie gebruikt dit adres. Controleer het adres."
+
+msgctxt "@info %1 the technical reason"
+msgid "The sign-in did not complete. (%1)"
+msgstr "Het aanmelden is niet voltooid. (%1)"
+
+msgid "The account service (graphaccountsd) does not answer. Reinstall plasma-graphcore-linux, or sign out of the desktop and in again."
+msgstr "De accountservice (graphaccountsd) antwoordt niet. Installeer plasma-graphcore-linux opnieuw, of meld je af bij het bureaublad en weer aan."
+
+msgid "Copy Approval Link"
+msgstr "Goedkeuringslink kopiëren"
+
+msgid "Open %1 on any device, enter the code %2 and sign in with your work account."
+msgstr "Open %1 op een willekeurig apparaat, voer de code %2 in en meld je aan met je werkaccount."
+
+msgid "Sign in in the browser. This page continues by itself."
+msgstr "Meld je aan in de browser. Deze pagina gaat daarna vanzelf verder."
+
+msgid "Copy Code"
+msgstr "Code kopiëren"
+
+msgid "Cancel"
+msgstr "Annuleren"
+
+msgid "One sign-in for Graph Mail, Graph Sync and the other Microsoft 365 apps of the suite. Signing out here signs the account out of all of them."
+msgstr "Eén aanmelding voor Graph Mail, Graph Sync en de andere Microsoft 365-apps van de suite. Als je hier afmeldt, wordt het account bij al deze apps afgemeld."
+
+msgid "No accounts yet"
+msgstr "Nog geen accounts"
+
+msgid "Add your work account to use the apps of the suite."
+msgstr "Voeg je werkaccount toe om de apps van de suite te gebruiken."
+
+msgid "Add Account…"
+msgstr "Account toevoegen…"
+
+msgctxt "%1 address, %2 organisation"
+msgid "%1 · %2"
+msgstr "%1 · %2"
+
+msgid "Sign In"
+msgstr "Aanmelden"
+
+msgid "More"
+msgstr "Meer"
+
+msgid "Sign In Again"
+msgstr "Opnieuw aanmelden"
+
+msgid "Sign In with a Code"
+msgstr "Aanmelden met een code"
+
+msgid "Sign Out…"
+msgstr "Afmelden…"
+
+msgid "Sign Out?"
+msgstr "Afmelden?"
+
+msgid "%1 is signed out of every app of the suite: mail, files and the others stop until you sign in again. Nothing is deleted."
+msgstr "%1 wordt bij elke app van de suite afgemeld: e-mail, bestanden en de andere apps stoppen tot je je opnieuw aanmeldt. Er wordt niets verwijderd."
+
+msgid "Sign Out"
+msgstr "Afmelden"
+
+msgid "Add Account"
+msgstr "Account toevoegen"
+
+msgid "Open Approval Page"
+msgstr "Goedkeuringspagina openen"
+
+msgid "Copy Link"
+msgstr "Link kopiëren"
+
+msgid "Work e-mail address:"
+msgstr "Zakelijk e-mailadres:"
+
+msgid "name@organization.com"
+msgstr "naam@organisatie.nl"
+
+msgid "This organization has its own app registration"
+msgstr "Deze organisatie heeft een eigen app-registratie"
+
+msgid "Client ID:"
+msgstr "Client-ID:"
+
+msgid "The client ID of the app registration in that organization (or the setup text), from its IT administrator."
+msgstr "De client-ID van de app-registratie in die organisatie (of de installatietekst), van de IT-beheerder daar."
+
+msgid "Signs in with the same app registration as your other accounts. Its organization must have approved it."
+msgstr "Meldt aan met dezelfde app-registratie als je andere accounts. De organisatie moet die hebben goedgekeurd."
+
+msgid "Open %1 on any device, enter the code below and sign in with your work account. This window continues by itself."
+msgstr "Open %1 op een willekeurig apparaat, voer de code hieronder in en meld je aan met je werkaccount. Dit venster gaat daarna vanzelf verder."
+
+msgid "Sign in in the browser. This window continues by itself."
+msgstr "Meld je aan in de browser. Dit venster gaat daarna vanzelf verder."
+
+msgid "Open Page"
+msgstr "Pagina openen"

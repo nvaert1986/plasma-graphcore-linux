@@ -4,7 +4,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: plasma-graphcore-linux\n"
-"PO-Revision-Date: 2026-11-17 13:35+0100\n"
+"PO-Revision-Date: 2026-11-17 13:42+0100\n"
 "Last-Translator: plasma-graphcore-linux contributors\n"
 "Language-Team: Dutch\n"
 "Language: nl\n"

@@ -120,6 +120,8 @@ AccountServer::AccountServer(QObject *parent)
     const KSharedConfig::Ptr config = KSharedConfig::openConfig(Accounts::configFileName(), KConfig::NoGlobals);
     const QStringList extra = config->group(QStringLiteral("Development")).readEntry("AllowedExecutables", QStringList());
     m_allowed = CallerCheck::allowedFor(directories, extra);
+    // System Settings only from the system's own places (its Microsoft 365 Accounts page)
+    m_managers = CallerCheck::allowedFor({QStringLiteral("/usr/bin"), QStringLiteral("/usr/local/bin")}, {}, CallerCheck::managerNames());
     if (!extra.isEmpty()) {
         qCInfo(GRAPHACCOUNTS) << "Also allowed (graphaccountsrc [Development]):" << extra;
     }
@@ -152,28 +154,31 @@ void AccountServer::refuse(const QString &problem, const QString &text)
     sendErrorReply(GraphCore::AccountService::errorName(problem), text);
 }
 
-bool AccountServer::callerAllowed()
+bool AccountServer::callerAllowed(bool tokens)
 {
     if (!calledFromDBus()) {
         return true;
     }
     const QString sender = message().service();
-    if (const auto known = m_callers.constFind(sender); known != m_callers.constEnd()) {
-        if (!*known) {
-            refuse(QStringLiteral("NotAllowed"), QStringLiteral("only the apps of the suite may use the account service"));
+    int level = m_callers.value(sender, -1);
+    if (level < 0) {
+        // Unique bus names are never reused, so the answer can be kept
+        const QDBusReply<uint> pid = connection().interface()->servicePid(sender);
+        const QString executable = pid.isValid() ? CallerCheck::executableOf(pid.value()) : QString();
+        level = CallerCheck::isAllowed(executable, m_allowed) ? 2 : CallerCheck::isAllowed(executable, m_managers) ? 1 : 0;
+        m_callers.insert(sender, level);
+        if (level == 0) {
+            qCWarning(GRAPHACCOUNTS).noquote() << "Refused a call from" << (executable.isEmpty() ? sender : executable);
         }
-        return *known;
     }
-    // Unique bus names are never reused, so the answer can be kept
-    const QDBusReply<uint> pid = connection().interface()->servicePid(sender);
-    const QString executable = pid.isValid() ? CallerCheck::executableOf(pid.value()) : QString();
-    const bool allowed = CallerCheck::isAllowed(executable, m_allowed);
-    m_callers.insert(sender, allowed);
-    if (!allowed) {
-        qCWarning(GRAPHACCOUNTS).noquote() << "Refused a call from" << (executable.isEmpty() ? sender : executable);
-        refuse(QStringLiteral("NotAllowed"), QStringLiteral("only the apps of the suite may use the account service"));
+    if (level == 2 || (level == 1 && !tokens)) {
+        return true;
     }
-    return allowed;
+    if (level == 1) {
+        qCWarning(GRAPHACCOUNTS) << "Refused a token to a program that only manages accounts";
+    }
+    refuse(QStringLiteral("NotAllowed"), QStringLiteral("only the apps of the suite may use the account service"));
+    return false;
 }
 
 std::shared_ptr<AccountServer::State> AccountServer::stateFor(const QString &id)
@@ -308,7 +313,7 @@ QString AccountServer::Accounts()
 QString AccountServer::AccessToken(const QString &account, const QString &scopeSet, bool forceRefresh, qlonglong &expiresAtMs)
 {
     expiresAtMs = 0;
-    if (!callerAllowed()) {
+    if (!callerAllowed(true)) {
         return {};
     }
     if (scopeSet != GraphCore::AccountService::suite() && scopeSet != GraphCore::AccountService::directory()) {

@@ -82,6 +82,8 @@ public:
     QString accessToken(QString *error, bool forceRefresh, Problem *problem);
     QString accessToken(QString *error, bool forceRefresh = false) override;
     QString cachedAccessToken() override;
+    // When the access token accessToken() last gave expires (invalid: none)
+    QDateTime accessTokenExpiry() const;
 
     bool hasStoredRefreshToken();
     // What the keychain holds for this account: Unknown when it cannot be read (locked, no
@@ -101,6 +103,8 @@ public:
     // Failed: the keychain could not be read or written (locked), try again later
     enum class CopyResult { Copied, NotFound, Failed };
     static CopyResult copyToken(const QString &fromService, const QString &fromKey, const QString &toService, const QString &toKey, bool removeSource, QString *error);
+    // Removes a stored sign-in (signing out for every app: the service's entry and the apps' own)
+    static void removeToken(const QString &service, const QString &key);
 
     // Tests only: token requests go to this loopback server (http://127.0.0.1:<port>) instead of
     // Microsoft; any other address is ignored, so a sign-in is never sent anywhere else

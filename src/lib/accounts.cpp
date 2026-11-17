@@ -103,6 +103,18 @@ void setApplication(const QString &app)
     application() = app;
 }
 
+QString clientIdOf(const QString &id, const QString &app)
+{
+    KSharedConfig::Ptr c = config();
+    const KConfigGroup group = c->group(groupPrefix + id);
+    const QString own = group.readEntry(QStringLiteral("ClientId-") + app);
+    if (!own.isEmpty()) {
+        return own;
+    }
+    const QString shared = group.readEntry("ClientId");
+    return shared.isEmpty() ? c->group(QStringLiteral("Registration")).readEntry("ClientId") : shared;
+}
+
 QString defaultClientId()
 {
     return config()->group(QStringLiteral("Registration")).readEntry("ClientId");

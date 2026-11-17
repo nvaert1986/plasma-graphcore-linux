@@ -442,6 +442,12 @@ QString Auth::cachedAccessToken()
     return fresh ? m_accessToken : QString();
 }
 
+QDateTime Auth::accessTokenExpiry() const
+{
+    QMutexLocker locker(&m_tokenMutex);
+    return m_expiresAt;
+}
+
 QString Auth::accessToken(QString *error, bool forceRefresh)
 {
     return accessToken(error, forceRefresh, nullptr);
@@ -615,6 +621,11 @@ bool Auth::writeRefreshTokenFor(const AuthSettings &settings, const QString &tok
         return false;
     }
     return keychainWrite(settings.keychainService, keychainKeyFor(settings.tenant, settings.clientId, settings.objectId), token, error);
+}
+
+void Auth::removeToken(const QString &service, const QString &key)
+{
+    keychainDelete(service, key);
 }
 
 Auth::CopyResult Auth::copyToken(const QString &fromService, const QString &fromKey, const QString &toService, const QString &toKey, bool removeSource, QString *error)

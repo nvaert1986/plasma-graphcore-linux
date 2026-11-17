@@ -119,6 +119,21 @@ private Q_SLOTS:
         // The shared key is left alone
         Accounts::setApplication({});
         QCOMPARE(Accounts::find(id).clientId, QStringLiteral("shared"));
+
+        // What each app uses, asked from outside (the account service taking over sign-ins)
+        QCOMPARE(Accounts::clientIdOf(id, QStringLiteral("app-a")), QStringLiteral("default-client"));
+        QCOMPARE(Accounts::clientIdOf(id, QStringLiteral("app-b")), QStringLiteral("b-client"));
+        QCOMPARE(Accounts::clientIdOf(id, QStringLiteral("app-c")), QStringLiteral("shared"));
+    }
+
+    void clientIdOfWithoutAnyKey()
+    {
+        Account account;
+        account.tenantId = QStringLiteral("t2");
+        account.objectId = QStringLiteral("o2");
+        const QString id = Accounts::add(account).id;
+        // Nothing on the account: the suite's registration
+        QCOMPARE(Accounts::clientIdOf(id, QStringLiteral("app-a")), QStringLiteral("default-client"));
     }
 };
 

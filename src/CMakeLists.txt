@@ -29,6 +29,7 @@ set(graphcore_HEADERS
     lib/graphutil.h
     lib/ratelimiter.h
     lib/scopes.h
+    lib/serviceclient.h
     lib/signin.h
     lib/throttle.h
     lib/tokenprovider.h
@@ -42,6 +43,7 @@ target_sources(graphcore PRIVATE
     lib/graphresponse.cpp
     lib/graphutil.cpp
     lib/ratelimiter.cpp
+    lib/serviceclient.cpp
     lib/signin.cpp
     lib/throttle.cpp
     ${graphcore_HEADERS}
@@ -70,6 +72,7 @@ target_link_libraries(graphcore
         KF6::ConfigCore
     PRIVATE
         Qt6::Concurrent
+        Qt6::DBus
 )
 
 install(TARGETS graphcore EXPORT GraphCoreTargets ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
@@ -96,3 +99,40 @@ target_link_libraries(graphcore_auth
     PRIVATE
         Qt6Keychain::Qt6Keychain
 )
+
+# graphaccountsd: the account service. graphaccountsd_test is the same with test hooks (a loopback
+# login server and refresh tokens from the environment), built only for the tests, never installed
+set(graphaccountsd_SOURCES daemon/accountserver.cpp daemon/accountserver.h daemon/callercheck.cpp daemon/callercheck.h)
+ecm_qt_declare_logging_category(graphaccountsd_SOURCES
+    HEADER graphaccountsd_debug.h
+    IDENTIFIER GRAPHACCOUNTS
+    CATEGORY_NAME graphaccountsd
+    DEFAULT_SEVERITY Info
+    DESCRIPTION "Account service (plasma-graphcore-linux)"
+    EXPORT GRAPHCORE
+)
+add_library(graphaccountsd_core STATIC ${graphaccountsd_SOURCES})
+target_include_directories(graphaccountsd_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/daemon ${CMAKE_CURRENT_BINARY_DIR})
+target_compile_definitions(graphaccountsd_core PRIVATE GRAPHCORE_BINDIR="${KDE_INSTALL_FULL_BINDIR}")
+target_link_libraries(graphaccountsd_core PUBLIC graphcore_auth Qt6::DBus Qt6::Concurrent KF6::ConfigCore)
+
+add_executable(graphaccountsd daemon/main.cpp)
+target_link_libraries(graphaccountsd PRIVATE graphaccountsd_core)
+install(TARGETS graphaccountsd ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
+
+if(BUILD_TESTING)
+    add_library(graphaccountsd_test_core STATIC ${graphaccountsd_SOURCES})
+    target_include_directories(graphaccountsd_test_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/daemon ${CMAKE_CURRENT_BINARY_DIR})
+    target_compile_definitions(graphaccountsd_test_core PRIVATE GRAPHCORE_BINDIR="${KDE_INSTALL_FULL_BINDIR}" GRAPHACCOUNTS_TEST_HOOKS)
+    target_link_libraries(graphaccountsd_test_core PUBLIC graphcore_auth Qt6::DBus Qt6::Concurrent KF6::ConfigCore)
+    add_executable(graphaccountsd_test daemon/main.cpp)
+    target_compile_definitions(graphaccountsd_test PRIVATE GRAPHACCOUNTS_TEST_HOOKS)
+    target_link_libraries(graphaccountsd_test PRIVATE graphaccountsd_test_core)
+endif()
+
+configure_file(${CMAKE_SOURCE_DIR}/data/io.github.nvaert1986.GraphAccounts.service.in ${CMAKE_CURRENT_BINARY_DIR}/io.github.nvaert1986.GraphAccounts.service @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/io.github.nvaert1986.GraphAccounts.service DESTINATION ${KDE_INSTALL_DBUSSERVICEDIR})
+
+add_executable(graphaccountsctl ctl/main.cpp)
+target_link_libraries(graphaccountsctl PRIVATE graphcore)
+install(TARGETS graphaccountsctl ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})

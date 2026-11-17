@@ -57,6 +57,10 @@ Account findUser(const QString &tenantId, const QString &objectId);
 // Returns the stored account.
 Account add(Account account);
 bool remove(const QString &id);
+// The registration (client ID) another app of the suite uses for this account: its own
+// ClientId-<app>, else the shared ClientId, else the default. The account service uses it to find
+// the sign-ins the apps stored before it existed
+QString clientIdOf(const QString &id, const QString &app);
 }
 
 }

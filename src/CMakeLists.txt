@@ -1,13 +1,17 @@
 # SPDX-FileCopyrightText: 2026 plasma-graphcore-linux contributors
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# libgraphcore: installed, used by every app of the suite. Symbols keep the default visibility for
-# now (SOVERSION 0, no stable ABI promised yet); export macros come before a 1.0
+# libgraphcore: installed, used by every app of the suite. The release rule (CONTRIBUTING.md): within
+# a series (0.11.x) only fixes, ABI and API stay compatible; new features only in the next minor.
+# So the SOVERSION is major.minor (libgraphcore.so.0.11: another series installs next to it) and the
+# CMake package only matches the same series. Symbols keep the default visibility for now; export
+# macros come before a 1.0
 ecm_setup_version(${PROJECT_VERSION}
     VARIABLE_PREFIX GRAPHCORE
     VERSION_HEADER ${CMAKE_CURRENT_BINARY_DIR}/graphcore_version.h
     PACKAGE_VERSION_FILE ${CMAKE_CURRENT_BINARY_DIR}/GraphCoreConfigVersion.cmake
-    SOVERSION 0
+    COMPATIBILITY SameMinorVersion
+    SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
 )
 
 add_library(graphcore SHARED)

@@ -265,6 +265,12 @@ void AccountServer::fillOrganization(const std::shared_ptr<State> &state)
     });
     watcher->setFuture(QtConcurrent::run([auth]() {
         GraphClient graph(auth.get());
+#ifdef GRAPHACCOUNTS_TEST_HOOKS
+        // Tests only: a fake Graph in place of Microsoft's
+        if (const QString server = qEnvironmentVariable("GRAPHACCOUNTS_TEST_GRAPH_SERVER"); !server.isEmpty()) {
+            graph.setBaseUrl(server);
+        }
+#endif
         const GraphResponse answer = graph.get(QStringLiteral("/organization?$select=displayName"));
         return answer.ok() ? answer.json().value(QLatin1String("value")).toArray().first().toObject().value(QLatin1String("displayName")).toString() : QString();
     }));

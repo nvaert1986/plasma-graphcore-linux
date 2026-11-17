@@ -9,6 +9,7 @@ ecm_add_tests(
     updatechecktest.cpp
     proxytest.cpp
     errorstest.cpp
+    peopletest.cpp
     LINK_LIBRARIES GraphCore::GraphCore Qt6::Test
 )
 

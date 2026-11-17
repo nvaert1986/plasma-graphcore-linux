@@ -17,6 +17,9 @@
   their state, Add Account (browser or code, an organisation's own registration, the approval link when
   an administrator has to approve), Sign In Again, Sign Out for every app. System Settings may manage
   accounts through the service but never gets a token.
+- `GraphCore::People`: finding people the same way in every app (the people someone works with, the
+  organisation's directory searched on every word, photos), as requests and parsers any Graph client
+  can use.
 
 ## 0.13.0 (2026-11-17)
 

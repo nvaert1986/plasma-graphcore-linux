@@ -32,6 +32,7 @@ set(graphcore_HEADERS
     lib/graphrequest.h
     lib/graphresponse.h
     lib/graphutil.h
+    lib/people.h
     lib/proxy.h
     lib/ratelimiter.h
     lib/scopes.h
@@ -50,6 +51,7 @@ target_sources(graphcore PRIVATE
     lib/graphrequest.cpp
     lib/graphresponse.cpp
     lib/graphutil.cpp
+    lib/people.cpp
     lib/proxy.cpp
     lib/ratelimiter.cpp
     lib/serviceclient.cpp

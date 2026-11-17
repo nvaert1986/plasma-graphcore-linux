@@ -61,7 +61,7 @@ private:
     // The account's state, made (again) when the account is new or changed in graphaccountsrc
     std::shared_ptr<State> stateFor(const QString &id);
     void setStatus(const std::shared_ptr<State> &state, const QString &status, const QString &problem);
-    void finishSignIn(const QString &request, const QString &clientId, const SignedInUser &user, bool ok, const QString &error);
+    void finishSignIn(const QString &request, const QString &clientId, const SignedInUser &user, const QString &organization, bool ok, const QString &error);
     void refuse(const QString &problem, const QString &text);
 
     CallerCheck::Allowed m_allowed;

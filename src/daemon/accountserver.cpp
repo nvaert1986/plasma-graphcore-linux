@@ -5,6 +5,7 @@
 #include "accounts.h"
 #include "auth.h"
 #include "graphaccountsd_debug.h"
+#include "graphclient.h"
 #include "scopes.h"
 #include "serviceclient.h"
 #include "signin.h"
@@ -393,8 +394,17 @@ QString AccountServer::SignIn(const QString &clientIdOrSetupText, const QString 
             }
         }
         const SignedInUser user = ok ? auth.signedInUser() : SignedInUser{};
-        QMetaObject::invokeMethod(this, [this, request, client, user, ok, error] {
-            finishSignIn(request, client, user, ok, error);
+        // The organisation's name for the account list (kept from before when this fails)
+        QString organization;
+        if (ok) {
+            GraphClient graph(&auth);
+            const GraphResponse answer = graph.get(QStringLiteral("/organization?$select=displayName"));
+            if (answer.ok()) {
+                organization = answer.json().value(QLatin1String("value")).toArray().first().toObject().value(QLatin1String("displayName")).toString();
+            }
+        }
+        QMetaObject::invokeMethod(this, [this, request, client, user, organization, ok, error] {
+            finishSignIn(request, client, user, organization, ok, error);
         });
     });
     connect(thread, &QThread::finished, thread, &QObject::deleteLater);
@@ -402,7 +412,7 @@ QString AccountServer::SignIn(const QString &clientIdOrSetupText, const QString 
     return request;
 }
 
-void AccountServer::finishSignIn(const QString &request, const QString &clientId, const SignedInUser &user, bool ok, const QString &error)
+void AccountServer::finishSignIn(const QString &request, const QString &clientId, const SignedInUser &user, const QString &organization, bool ok, const QString &error)
 {
     m_signIns.remove(request);
     if (!ok) {
@@ -410,7 +420,12 @@ void AccountServer::finishSignIn(const QString &request, const QString &clientId
         Q_EMIT SignInFinished(request, {}, error);
         return;
     }
-    const Account stored = GraphCore::Accounts::add(Auth::accountFor(user, clientId));
+    Account account = Auth::accountFor(user, clientId);
+    account.organization = organization;
+    if (organization.isEmpty()) {
+        account.organization = GraphCore::Accounts::findUser(user.tenantId, user.objectId).organization;
+    }
+    const Account stored = GraphCore::Accounts::add(account);
     // A fresh state reads the new sign-in
     m_states.remove(stored.id);
     if (const std::shared_ptr<State> state = stateFor(stored.id)) {

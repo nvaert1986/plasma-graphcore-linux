@@ -1,0 +1,8 @@
+# Build trees
+build*/
+# Personal notes and tools (never published)
+docs/
+TODO.md
+HANDOFF.md
+.dev/
+probe/

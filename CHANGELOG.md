@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.13.0 (in development)
+## 0.13.0 (2026-11-17)
 
 **Changed**
 - Once the account service has used its own sign-in of an account, it removes the copies the apps

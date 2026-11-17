@@ -422,12 +422,27 @@ private Q_SLOTS:
     void signOut()
     {
         AccountsClient accounts;
+        QSignalSpy changed(&accounts, &AccountsClient::accountsChanged);
         QString error;
+        // An app holding a token of a1 (kept for up to an hour)
+        ServiceTokenProvider held(QStringLiteral("a1"));
+        QVERIFY(!meanwhile([&] {
+                     return held.accessToken(&error);
+                 }).isEmpty());
+        QVERIFY(!held.cachedAccessToken().isEmpty());
         QVERIFY2(meanwhile([&] {
                      return accounts.signOut(QStringLiteral("a1"), &error);
                  }),
                  qPrintable(error));
         QCOMPARE(stateOf(QStringLiteral("a1")), QStringLiteral("signedOut"));
+        // The sign-out reaches the app at once: its kept token is no longer used
+        QTRY_VERIFY(!changed.isEmpty());
+        QVERIFY(held.cachedAccessToken().isEmpty());
+        QVERIFY(meanwhile([&] {
+                    return held.accessToken(&error);
+                }).isEmpty());
+        // NotSignedIn on a real session; this bus has no keychain to look in, so the reason may differ
+        QVERIFY(!held.lastProblem().isEmpty());
         QVERIFY(!accounts.signOut(QStringLiteral("no-such-account"), &error));
     }
 };

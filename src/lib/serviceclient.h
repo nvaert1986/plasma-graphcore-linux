@@ -54,7 +54,8 @@ struct ServiceAccount {
 };
 
 // Access tokens of one account from the service. Thread-safe (Graph requests ask from their own
-// threads); a token is kept until five minutes before it expires
+// threads); a token is kept until five minutes before it expires, or until the service reports a
+// change of the accounts (a sign-out stops every app at its next request)
 class ServiceTokenProvider : public TokenProvider
 {
 public:
@@ -75,6 +76,8 @@ private:
     QString m_token;
     QDateTime m_expiresAt;
     QString m_lastProblem;
+    // The service's account changes seen when the token was kept (see the .cpp)
+    quint64 m_generation = 0;
 };
 
 // Accounts, sign-in and sign-out through the service, and its signals

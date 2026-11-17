@@ -11,7 +11,11 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QCoreApplication>
 #include <QTimeZone>
+
+#include <atomic>
+#include <mutex>
 
 namespace GraphCore
 {
@@ -28,6 +32,37 @@ QDBusMessage call(const QString &method, const QVariantList &arguments)
     QDBusMessage message = QDBusMessage::createMethodCall(AccountService::serviceName(), AccountService::objectPath(), AccountService::interfaceName(), method);
     message.setArguments(arguments);
     return message;
+}
+
+// Counts the service's AccountsChanged signals in this process: a kept token is only used while the
+// count is the one it was fetched under, so a sign-out (or a new sign-in) reaches every app at once
+std::atomic<quint64> accountsGeneration{1};
+
+class GenerationWatcher : public QObject
+{
+    Q_OBJECT
+public Q_SLOTS:
+    void bump()
+    {
+        accountsGeneration.fetch_add(1);
+    }
+};
+
+void watchAccountChanges()
+{
+    static std::once_flag once;
+    std::call_once(once, [] {
+        QCoreApplication *app = QCoreApplication::instance();
+        if (!app) {
+            return;
+        }
+        // Lives on the main thread, where the bus delivers the signal
+        auto *watcher = new GenerationWatcher;
+        watcher->moveToThread(app->thread());
+        watcher->setParent(app);
+        QDBusConnection::sessionBus().connect(AccountService::serviceName(), AccountService::objectPath(), AccountService::interfaceName(), QStringLiteral("AccountsChanged"),
+                                              watcher, SLOT(bump()));
+    });
 }
 }
 
@@ -70,6 +105,7 @@ ServiceTokenProvider::ServiceTokenProvider(const QString &accountId, const QStri
     : m_account(accountId)
     , m_scopeSet(scopeSet)
 {
+    watchAccountChanges();
 }
 
 QString ServiceTokenProvider::accountId() const
@@ -80,7 +116,8 @@ QString ServiceTokenProvider::accountId() const
 QString ServiceTokenProvider::cachedAccessToken()
 {
     QMutexLocker locker(&m_mutex);
-    const bool fresh = !m_token.isEmpty() && m_expiresAt.isValid() && QDateTime::currentDateTimeUtc().secsTo(m_expiresAt) > refreshMarginSeconds;
+    const bool fresh = !m_token.isEmpty() && m_expiresAt.isValid() && QDateTime::currentDateTimeUtc().secsTo(m_expiresAt) > refreshMarginSeconds
+        && m_generation == accountsGeneration.load();
     return fresh ? m_token : QString();
 }
 
@@ -91,6 +128,8 @@ QString ServiceTokenProvider::accessToken(QString *error, bool forceRefresh)
             return token;
         }
     }
+    // The count before asking: a change while the call runs makes the next request ask again
+    const quint64 generation = accountsGeneration.load();
     const QDBusMessage reply = QDBusConnection::sessionBus().call(call(QStringLiteral("AccessToken"), {m_account, m_scopeSet, forceRefresh}), QDBus::Block, tokenTimeoutMs);
     QMutexLocker locker(&m_mutex);
     if (reply.type() != QDBusMessage::ReplyMessage || reply.arguments().size() != 2) {
@@ -102,6 +141,7 @@ QString ServiceTokenProvider::accessToken(QString *error, bool forceRefresh)
         return {};
     }
     m_lastProblem.clear();
+    m_generation = generation;
     m_token = reply.arguments().at(0).toString();
     m_expiresAt = QDateTime::fromMSecsSinceEpoch(reply.arguments().at(1).toLongLong(), QTimeZone::UTC);
     return m_token;
@@ -200,3 +240,5 @@ void AccountsClient::onSignInFinished(const QString &request, const QString &acc
 }
 
 }
+
+#include "serviceclient.moc"

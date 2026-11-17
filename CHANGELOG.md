@@ -21,6 +21,10 @@
   organisation's directory searched on every word, photos), as requests and parsers any Graph client
   can use.
 
+**Fixed**
+- After a sign-out (or a new sign-in) the apps no longer keep using the access token they held for
+  up to an hour: they ask the service again at their next request.
+
 ## 0.13.0 (2026-11-17)
 
 **Changed**

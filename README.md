@@ -38,6 +38,16 @@ boundary against code that already runs as the same user, which could read the o
 For development builds, `[Development] AllowedExecutables` in `~/.config/graphaccountsrc` lists extra
 executables (absolute paths) or build directories (paths ending in `/`).
 
+## Packages
+
+Each [release](https://github.com/nvaert1986/plasma-graphcore-linux/releases) has packages for
+Debian 13 (`libgraphcore0.14`, `plasma-graphcore-linux`, `libgraphcore-dev` for building the apps),
+Fedora (`plasma-graphcore-linux`, `-devel`) and Arch Linux (`plasma-graphcore-linux`). The apps'
+packages need them: install them together, for example on Debian 13 (as root)
+`apt install ./libgraphcore0.14_<version>-1_amd64.deb ./plasma-graphcore-linux_<version>-1_amd64.deb ./plasma-graphsync-linux_<version>-1_amd64.deb`.
+They are built and install-tested in clean containers (not on a real desktop); the packaging files
+are in [packaging/](packaging/).
+
 ## Building
 
 Requirements: CMake 3.25, Extra CMake Modules and KDE Frameworks 6.13 or newer (Config, CoreAddons,

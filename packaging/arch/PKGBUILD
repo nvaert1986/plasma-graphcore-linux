@@ -1,0 +1,33 @@
+# SPDX-FileCopyrightText: 2026 plasma-graphcore-linux contributors
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Maintainer: nvaert1986 <25772781+nvaert1986@users.noreply.github.com>
+
+pkgname=plasma-graphcore-linux
+pkgver=0.14.0
+pkgrel=1
+pkgdesc='Account service and shared core of the Microsoft 365 apps for KDE Plasma'
+arch=(x86_64)
+url='https://github.com/nvaert1986/plasma-graphcore-linux'
+license=(GPL-3.0-or-later)
+# kirigami, kcmutils' QML and qt6-declarative: the System Settings page loads them at run time
+depends=(glibc libstdc++
+         qt6-base qt6-declarative qt6-networkauth qtkeychain-qt6
+         kcmutils kconfig kcoreaddons ki18n kirigami knotifications)
+makedepends=(cmake extra-cmake-modules)
+optdepends=('kwallet: keeps the sign-in (or another Secret Service provider)'
+            'systemsettings: System Settings > Microsoft 365 Accounts')
+options=(!debug)
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')  # set from the tag tarball at release
+
+build() {
+  cmake -B build -S "$pkgname-$pkgver" \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_BUILD_TYPE=None \
+    -DBUILD_TESTING=OFF
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}

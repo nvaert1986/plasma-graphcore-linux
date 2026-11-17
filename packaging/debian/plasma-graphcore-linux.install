@@ -1,0 +1,7 @@
+usr/bin/graphaccountsctl
+usr/bin/graphaccountsd
+usr/lib/*/qt6/plugins/plasma/kcms/systemsettings/kcm_graphaccounts.so
+usr/share/applications/kcm_graphaccounts.desktop
+usr/share/dbus-1/services/io.github.nvaert1986.GraphAccounts.service
+usr/share/knotifications6/plasma-graphcore-linux.notifyrc
+usr/share/locale

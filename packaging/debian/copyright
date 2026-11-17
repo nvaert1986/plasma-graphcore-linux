@@ -1,0 +1,10 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: plasma-graphcore-linux
+Source: https://github.com/nvaert1986/plasma-graphcore-linux
+
+Files: *
+Copyright: 2026 plasma-graphcore-linux contributors
+License: GPL-3.0-or-later
+
+License: GPL-3.0-or-later
+ On Debian systems the full text is in /usr/share/common-licenses/GPL-3.

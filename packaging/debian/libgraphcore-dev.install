@@ -1,0 +1,3 @@
+usr/include/graphcore
+usr/lib/*/libgraphcore.so
+usr/lib/*/cmake/GraphCore

@@ -1,0 +1,64 @@
+Source: plasma-graphcore-linux
+Section: net
+Priority: optional
+Maintainer: nvaert1986 <25772781+nvaert1986@users.noreply.github.com>
+Build-Depends: debhelper-compat (= 13),
+               cmake,
+               extra-cmake-modules,
+               gettext,
+               libkf6config-dev,
+               libkf6coreaddons-dev,
+               libkf6i18n-dev,
+               libkf6kcmutils-dev,
+               libkf6notifications-dev,
+               qt6-base-dev,
+               qt6-declarative-dev,
+               qt6-networkauth-dev,
+               qtkeychain-qt6-dev
+Standards-Version: 4.7.0
+Homepage: https://github.com/nvaert1986/plasma-graphcore-linux
+Rules-Requires-Root: no
+
+Package: plasma-graphcore-linux
+Architecture: any
+Depends: ${misc:Depends},
+         ${shlibs:Depends},
+         libgraphcore0.14 (= ${binary:Version}),
+         qml6-module-org-kde-kcmutils,
+         qml6-module-org-kde-kirigami,
+         qml6-module-qtquick-controls,
+         qml6-module-qtquick-layouts
+# The keychain (Secret Service) that holds the sign-in, and System Settings for the accounts page
+Recommends: kwallet6 | gnome-keyring,
+            systemsettings
+Description: Account service and shared core of the Microsoft 365 apps for KDE Plasma
+ The sign-in shared by Graph Sync, Graph Mail and the other apps of the suite:
+ the account service graphaccountsd (D-Bus activated) keeps one sign-in per
+ account in the system keychain and hands out access tokens to the suite's
+ programs; System Settings > Microsoft 365 Accounts lists the accounts, adds
+ one, signs in again and signs out. Not affiliated with Microsoft.
+
+Package: libgraphcore0.14
+Section: libs
+Architecture: any
+Multi-Arch: same
+Depends: ${misc:Depends},
+         ${shlibs:Depends}
+Recommends: plasma-graphcore-linux
+Description: Microsoft Graph library of the Microsoft 365 apps for KDE Plasma
+ The library the suite's apps share: accounts, the client of the account
+ service, a Microsoft Graph client with throttling and retries, the system's
+ proxy settings, error messages, people search and the update check.
+ .
+ Named after its release series: series 0.14 can be installed next to others.
+
+Package: libgraphcore-dev
+Section: libdevel
+Architecture: any
+Multi-Arch: same
+Depends: ${misc:Depends},
+         libgraphcore0.14 (= ${binary:Version}),
+         libkf6config-dev,
+         qt6-base-dev
+Description: Microsoft Graph library of the Microsoft 365 apps (development files)
+ Headers and the CMake package GraphCore, for building the apps of the suite.

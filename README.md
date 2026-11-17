@@ -5,7 +5,7 @@ The shared Microsoft Graph core of a small suite of KDE Plasma apps for Microsof
 and Graph Mail (mail, calendar, contacts and tasks for Exchange Online). Every app of the suite
 uses this core, so one sign-in per organisation is enough for all of them.
 
-**Status:** version 0.14.0, in development (0.13.0 is the current release). Fixes for a series go on its branch (`0.13`, `0.12`, `0.11`). The suite's apps
+**Status:** version 0.14.0. Fixes for a series go on its branch (`0.14`, `0.13`, `0.12`, `0.11`). The suite's apps
 share major.minor. Within a series the library's ABI and API stay compatible (CONTRIBUTING.md); the
 library is named after its series (`libgraphcore.so.0.14`).
 

@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.14.0 (in development)
+## 0.14.0 (2026-11-17)
 
 **New**
 - The system's proxy (System Settings > Network > Proxy: manual, environment variables, PAC or

@@ -94,6 +94,8 @@ struct AccountServer::State {
     QString status = QStringLiteral("unknown");
     // SignInNeeded sent since the last success
     bool announced = false;
+    // The organisation's name was asked for this run (accounts without one). Main thread only
+    bool organizationTried = false;
     // The apps' own stored sign-ins of this account were removed (step 6 of phase 10): once the
     // service has used its own, the old copies only remain a risk. Main thread only
     bool earlierRemoved = false;
@@ -236,6 +238,38 @@ void AccountServer::removeEarlierSignIns(const std::shared_ptr<State> &state)
     });
 }
 
+void AccountServer::fillOrganization(const std::shared_ptr<State> &state)
+{
+    if (state->organizationTried || !state->account.organization.isEmpty()) {
+        return;
+    }
+    state->organizationTried = true;
+    const std::shared_ptr<Auth> auth = state->suite;
+    auto *watcher = new QFutureWatcher<QString>(this);
+    connect(watcher, &QFutureWatcher<QString>::finished, this, [this, watcher, state] {
+        watcher->deleteLater();
+        const QString organization = watcher->result();
+        if (organization.isEmpty()) {
+            return;
+        }
+        // Stored for every app (they read graphaccountsrc), and kept in the state
+        GraphCore::Account account = GraphCore::Accounts::find(state->account.id);
+        if (!account.isValid()) {
+            return;
+        }
+        account.organization = organization;
+        GraphCore::Accounts::add(account);
+        state->account.organization = organization;
+        qCInfo(GRAPHACCOUNTS).noquote() << "Stored the organisation name of account" << state->account.id;
+        Q_EMIT AccountsChanged();
+    });
+    watcher->setFuture(QtConcurrent::run([auth]() {
+        GraphClient graph(auth.get());
+        const GraphResponse answer = graph.get(QStringLiteral("/organization?$select=displayName"));
+        return answer.ok() ? answer.json().value(QLatin1String("value")).toArray().first().toObject().value(QLatin1String("displayName")).toString() : QString();
+    }));
+}
+
 void AccountServer::setStatus(const std::shared_ptr<State> &state, const QString &status, const QString &problem)
 {
     const bool changed = state->status != status;
@@ -343,6 +377,7 @@ QString AccountServer::AccessToken(const QString &account, const QString &scopeS
             bus.send(request.createReply({result.token, result.expiresAtMs}));
             setStatus(state, QStringLiteral("signedIn"), {});
             removeEarlierSignIns(state);
+            fillOrganization(state);
             return;
         }
         const QString problem = problemName(result.problem);

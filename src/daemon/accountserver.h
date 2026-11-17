@@ -67,6 +67,8 @@ private:
     void setStatus(const std::shared_ptr<State> &state, const QString &status, const QString &problem);
     // The apps' own stored sign-ins of an account, once the service's own works: removed
     void removeEarlierSignIns(const std::shared_ptr<State> &state);
+    // An account signed in before the service stored organisations: its name, fetched once
+    void fillOrganization(const std::shared_ptr<State> &state);
     void finishSignIn(const QString &request, const QString &clientId, const SignedInUser &user, const QString &organization, bool ok, const QString &error);
     void refuse(const QString &problem, const QString &text);
     // A sign-in on its own thread (no caller check: SignIn and the notification's action); the request id

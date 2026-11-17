@@ -7,7 +7,7 @@ uses this core, so one sign-in per organisation is enough for all of them.
 
 **Status:** version 0.14.0, in development (0.13.0 is the current release). Fixes for a series go on its branch (`0.13`, `0.12`, `0.11`). The suite's apps
 share major.minor. Within a series the library's ABI and API stay compatible (CONTRIBUTING.md); the
-library is named after its series (`libgraphcore.so.0.12`).
+library is named after its series (`libgraphcore.so.0.14`).
 
 > **Experimental: use at your own risk.** This is young software that handles your Microsoft 365
 > sign-in. Not affiliated with or endorsed by Microsoft.
@@ -19,14 +19,20 @@ library is named after its series (`libgraphcore.so.0.12`).
   short-lived access tokens over D-Bus (`io.github.nvaert1986.GraphAccounts`). It signs in through
   the browser or with a code entered on any device, refreshes tokens, tells the apps when a sign-in
   has expired, and signs out for every app at once. D-Bus starts it when an app first needs it.
+  When a sign-in expires it shows one "Sign in again" notification for the whole suite, with a
+  Sign In button.
+- **Microsoft 365 Accounts** in System Settings (Network): the suite's accounts and their state, Add
+  Account, Sign In Again and Sign Out. The apps open this page instead of having their own.
 - **libgraphcore**, the library the apps link: accounts (`graphaccountsrc`), the client of the
   account service, a Microsoft Graph client with throttling, retries and connectivity checks, the
-  helpers the apps' sign-in screens need, and the apps' daily check for a new release on GitHub.
-  CMake package `GraphCore`.
+  system's proxy settings (System Settings > Network > Proxy) for every request, clear error
+  messages, the people search and photos, the helpers the apps' sign-in screens need, and the apps'
+  daily check for a new release on GitHub. CMake package `GraphCore`.
 - **graphaccountsctl**: the account service from the command line (`list`, `login`, `logout`,
   `check`). It never prints a token.
 
 Only the suite's own programs get tokens: the service checks which executable sent each D-Bus call.
+System Settings (and `kcmshell6`) may list accounts, sign in and sign out, but never gets a token.
 This keeps other programs on the session bus from simply asking for one; it is not a security
 boundary against code that already runs as the same user, which could read the open keychain too.
 For development builds, `[Development] AllowedExecutables` in `~/.config/graphaccountsrc` lists extra
@@ -34,9 +40,10 @@ executables (absolute paths) or build directories (paths ending in `/`).
 
 ## Building
 
-Requirements: CMake 3.25, Extra CMake Modules and KConfig 6.13 or newer, Qt 6.8 or newer (Core,
-Network, NetworkAuth, Concurrent, DBus, Test), QtKeychain for Qt 6, and `dbus-run-session` for the
-account service test.
+Requirements: CMake 3.25, Extra CMake Modules and KDE Frameworks 6.13 or newer (Config, CoreAddons,
+I18n, KCMUtils, Notifications), Qt 6.8 or newer (Core, Gui, Qml, Network, NetworkAuth, Concurrent,
+DBus, Test), QtKeychain for Qt 6, and `dbus-run-session` for the account service test. The System
+Settings page needs Kirigami at run time.
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo

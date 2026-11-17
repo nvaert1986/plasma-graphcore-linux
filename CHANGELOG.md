@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.12.0 (in development)
+## 0.12.0 (2026-11-17)
 
 **New**
 - UpdateChecker: the update check of the suite's apps (once a day GitHub's newest release of the

@@ -35,6 +35,10 @@ inline QString directory()
 {
     return QStringLiteral("directory");
 }
+// Opens System Settings > Microsoft 365 Accounts (kcm_graphaccounts), where every app of the suite
+// sends people to add an account or sign in again; false when neither System Settings nor
+// kcmshell6 could be started
+bool openSettings();
 }
 
 // An account as the service lists it

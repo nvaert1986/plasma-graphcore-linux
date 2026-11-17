@@ -3,6 +3,8 @@
 
 #include "serviceclient.h"
 
+#include <QProcess>
+
 #include <QDBusConnection>
 #include <QDBusMessage>
 #include <QDBusReply>
@@ -55,6 +57,12 @@ QString problemOf(const QString &errorName)
 {
     const QString prefix = interfaceName() + QStringLiteral(".Error.");
     return errorName.startsWith(prefix) ? errorName.mid(prefix.size()) : QString();
+}
+
+bool openSettings()
+{
+    const QStringList page{QStringLiteral("kcm_graphaccounts")};
+    return QProcess::startDetached(QStringLiteral("systemsettings"), page) || QProcess::startDetached(QStringLiteral("kcmshell6"), page);
 }
 }
 

@@ -31,6 +31,18 @@ private Q_SLOTS:
         QVERIFY(!CallerCheck::isAllowed(QString(), allowed));
     }
 
+    void managers()
+    {
+        // System Settings manages accounts; it is not one of the suite's programs
+        const CallerCheck::Allowed apps = CallerCheck::allowedFor({QStringLiteral("/usr/bin")}, {});
+        const CallerCheck::Allowed managers = CallerCheck::allowedFor({QStringLiteral("/usr/bin")}, {}, CallerCheck::managerNames());
+        QVERIFY(!CallerCheck::isAllowed(QStringLiteral("/usr/bin/systemsettings"), apps));
+        QVERIFY(CallerCheck::isAllowed(QStringLiteral("/usr/bin/systemsettings"), managers));
+        QVERIFY(CallerCheck::isAllowed(QStringLiteral("/usr/bin/kcmshell6"), managers));
+        QVERIFY(!CallerCheck::isAllowed(QStringLiteral("/usr/bin/graphmaild"), managers));
+        QVERIFY(!CallerCheck::isAllowed(QStringLiteral("/home/someone/.local/bin/systemsettings"), managers));
+    }
+
     void developmentEntries()
     {
         const CallerCheck::Allowed allowed = CallerCheck::allowedFor({}, {QStringLiteral("/src/mail/build/bin/"), QStringLiteral("/opt/tool"), QStringLiteral("relative/bin/")});

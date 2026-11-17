@@ -271,7 +271,7 @@ void AccountServer::notifySignInNeeded(const std::shared_ptr<State> &state, cons
         notification->setText(i18nc("@info %1 an account", "Your organisation's administrator has to approve the Microsoft 365 apps for %1 first. Mail, files and the other apps of the suite wait until then.", who.toHtmlEscaped()));
         KNotificationAction *details = notification->addAction(i18nc("@action:button", "Show Details"));
         connect(details, &KNotificationAction::activated, this, [] {
-            QProcess::startDetached(QStringLiteral("systemsettings"), {QStringLiteral("kcm_graphaccounts")});
+            GraphCore::AccountService::openSettings();
         });
     } else {
         notification->setTitle(i18nc("@title", "Sign in again"));

@@ -28,12 +28,13 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Core Network NetworkAuth Concurrent DBus Test)
-find_package(KF6 ${KF_MIN_VERSION} REQUIRED COMPONENTS Config)
+find_package(KF6 ${KF_MIN_VERSION} REQUIRED COMPONENTS Config I18n)
 find_package(Qt6Keychain REQUIRED)
 
 add_compile_definitions(GRAPHCORE_VERSION="${PROJECT_VERSION}")
 
 add_subdirectory(src)
+ki18n_install(po)
 
 if(BUILD_TESTING)
     add_subdirectory(autotests)

@@ -27,6 +27,7 @@ set_target_properties(graphcore PROPERTIES
 set(graphcore_HEADERS
     lib/accounts.h
     lib/connectivity.h
+    lib/errors.h
     lib/graphclient.h
     lib/graphrequest.h
     lib/graphresponse.h
@@ -44,6 +45,7 @@ set(graphcore_HEADERS
 target_sources(graphcore PRIVATE
     lib/accounts.cpp
     lib/connectivity.cpp
+    lib/errors.cpp
     lib/graphclient.cpp
     lib/graphrequest.cpp
     lib/graphresponse.cpp
@@ -83,7 +85,10 @@ target_link_libraries(graphcore
     PRIVATE
         Qt6::Concurrent
         Qt6::DBus
+        KF6::I18n
 )
+# Messages for people (Errors) in the suite's core catalog
+target_compile_definitions(graphcore PRIVATE TRANSLATION_DOMAIN="plasma-graphcore-linux")
 
 install(TARGETS graphcore EXPORT GraphCoreTargets ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
 install(FILES ${graphcore_HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/graphcore_version.h

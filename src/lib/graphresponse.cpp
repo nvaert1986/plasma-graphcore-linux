@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "graphresponse.h"
+#include "errors.h"
 
 #include <QJsonDocument>
 
@@ -26,6 +27,11 @@ QByteArray GraphResponse::header(const QByteArray &name) const
 QString GraphResponse::graphErrorCode() const
 {
     return json().value(QLatin1String("error")).toObject().value(QLatin1String("code")).toString();
+}
+
+QString GraphResponse::userMessage() const
+{
+    return ok() ? QString() : Errors::message(status, graphErrorCode(), errorString);
 }
 
 QString GraphResponse::describe() const

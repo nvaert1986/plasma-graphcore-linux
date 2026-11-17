@@ -36,6 +36,8 @@ struct GraphResponse {
     // Graph error code ("ErrorItemNotFound", "notAllowed", ...) and message, when present
     QString graphErrorCode() const;
     QString describe() const;
+    // For people: what happened and what to do, translated (Errors::message); empty when ok()
+    QString userMessage() const;
 };
 
 }

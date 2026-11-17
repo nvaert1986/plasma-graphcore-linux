@@ -1,0 +1,130 @@
+# Dutch translation of plasma-graphcore-linux
+# SPDX-FileCopyrightText: 2026 plasma-graphcore-linux contributors
+# SPDX-License-Identifier: GPL-3.0-or-later
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma-graphcore-linux\n"
+"PO-Revision-Date: 2026-11-17 13:26+0100\n"
+"Last-Translator: plasma-graphcore-linux contributors\n"
+"Language-Team: Dutch\n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+msgctxt "@info %1 the technical reason"
+msgid "The proxy server did not pass the connection on to Microsoft 365. Check the proxy settings. (%1)"
+msgstr "De proxyserver gaf de verbinding niet door aan Microsoft 365. Controleer de proxy-instellingen. (%1)"
+
+msgctxt "@info %1 the technical reason"
+msgid "The secure connection to Microsoft 365 failed. (%1)"
+msgstr "De beveiligde verbinding met Microsoft 365 is mislukt. (%1)"
+
+msgctxt "@info %1 the technical reason"
+msgid "Microsoft 365 did not answer in time. It is tried again later. (%1)"
+msgstr "Microsoft 365 antwoordde niet op tijd. Het wordt later opnieuw geprobeerd. (%1)"
+
+msgctxt "@info"
+msgid "Cancelled."
+msgstr "Geannuleerd."
+
+msgctxt "@info"
+msgid "No connection to Microsoft 365. Check the network connection."
+msgstr "Geen verbinding met Microsoft 365. Controleer de netwerkverbinding."
+
+msgctxt "@info %1 the technical reason"
+msgid "No connection to Microsoft 365. Check the network connection. (%1)"
+msgstr "Geen verbinding met Microsoft 365. Controleer de netwerkverbinding. (%1)"
+
+msgctxt "@info %1 a sentence, %2 the technical code"
+msgid "%1 (%2)"
+msgstr "%1 (%2)"
+
+msgctxt "@info"
+msgid "There is not enough storage space online (the mailbox or OneDrive is full)."
+msgstr "Er is online niet genoeg opslagruimte (het postvak of OneDrive is vol)."
+
+msgctxt "@info"
+msgid "Your organisation does not allow this."
+msgstr "Je organisatie staat dit niet toe."
+
+msgctxt "@info"
+msgid "The item is locked, for example because it is open somewhere else. Try again later."
+msgstr "Het item is vergrendeld, bijvoorbeeld omdat het ergens anders geopend is. Probeer het later opnieuw."
+
+msgctxt "@info"
+msgid "An item with this name already exists."
+msgstr "Er bestaat al een item met deze naam."
+
+msgctxt "@info"
+msgid "This mailbox cannot be reached right now (it may be on another server or being moved)."
+msgstr "Dit postvak is nu niet bereikbaar (het staat mogelijk op een andere server of wordt verplaatst)."
+
+msgctxt "@info"
+msgid "You are not allowed to send as this address."
+msgstr "Je mag niet verzenden als dit adres."
+
+msgctxt "@info"
+msgid "The file or message is too large."
+msgstr "Het bestand of bericht is te groot."
+
+msgctxt "@info"
+msgid "Microsoft 365 did not accept the request."
+msgstr "Microsoft 365 heeft het verzoek niet geaccepteerd."
+
+msgctxt "@info"
+msgid "The sign-in is no longer valid. Sign in again."
+msgstr "De aanmelding is niet meer geldig. Meld je opnieuw aan."
+
+msgctxt "@info"
+msgid "You do not have permission for this."
+msgstr "Je hebt hier geen toestemming voor."
+
+msgctxt "@info"
+msgid "The item no longer exists, or you no longer have access to it."
+msgstr "Het item bestaat niet meer, of je hebt er geen toegang meer toe."
+
+msgctxt "@info"
+msgid "The item was changed somewhere else at the same time. Try again."
+msgstr "Het item is tegelijkertijd ergens anders gewijzigd. Probeer het opnieuw."
+
+msgctxt "@info"
+msgid "Microsoft 365 is limiting the number of requests for a while. It is tried again shortly."
+msgstr "Microsoft 365 beperkt tijdelijk het aantal verzoeken. Het wordt zo opnieuw geprobeerd."
+
+msgctxt "@info"
+msgid "Microsoft 365 has a temporary problem. It is tried again later."
+msgstr "Microsoft 365 heeft een tijdelijk probleem. Het wordt later opnieuw geprobeerd."
+
+msgctxt "@info"
+msgid "Microsoft 365 answered with an error."
+msgstr "Microsoft 365 antwoordde met een fout."
+
+msgctxt "@info"
+msgid "This account is not signed in. Sign in under System Settings > Microsoft 365 Accounts."
+msgstr "Dit account is niet aangemeld. Meld je aan via Systeeminstellingen > Microsoft 365-accounts."
+
+msgctxt "@info"
+msgid "The sign-in of this account expired. Sign in again."
+msgstr "De aanmelding van dit account is verlopen. Meld je opnieuw aan."
+
+msgctxt "@info"
+msgid "Your organisation's administrator has to approve this app first."
+msgstr "De beheerder van je organisatie moet deze app eerst goedkeuren."
+
+msgctxt "@info"
+msgid "The wallet that holds the sign-in is locked. Unlock it to continue."
+msgstr "De portefeuille met de aanmelding is vergrendeld. Ontgrendel deze om verder te gaan."
+
+msgctxt "@info"
+msgid "This program is not allowed to use the suite's accounts."
+msgstr "Dit programma mag de accounts van de suite niet gebruiken."
+
+msgctxt "@info"
+msgid "This account is no longer on this computer. Add it again under System Settings > Microsoft 365 Accounts."
+msgstr "Dit account staat niet meer op deze computer. Voeg het opnieuw toe via Systeeminstellingen > Microsoft 365-accounts."
+
+msgctxt "@info %1 the technical reason"
+msgid "The account service could not get a sign-in. (%1)"
+msgstr "De accountservice kon geen aanmelding krijgen. (%1)"

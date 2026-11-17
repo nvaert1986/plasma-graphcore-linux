@@ -6,6 +6,9 @@
 - The system's proxy (System Settings > Network > Proxy: manual, environment variables, PAC or
   automatic) for every sign-in and Graph request of the service and the suite's apps
   (`GraphCore::Proxy::useSystemSettings`).
+- Graph errors and the service's problems as clear messages that say what to do, the same in every
+  app (`GraphResponse::userMessage`, `GraphCore::Errors`), with Dutch translations: the core has its
+  own translation catalog now (`plasma-graphcore-linux`).
 
 ## 0.13.0 (2026-11-17)
 

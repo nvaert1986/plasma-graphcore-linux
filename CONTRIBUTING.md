@@ -2,11 +2,13 @@
 
 ## Versions and branches
 
-The suite's apps (Graph Sync, Graph Mail) and this core keep one version number, major.minor.patch.
+The suite's apps (Graph Sync, Graph Mail) and this core keep one version series.
 
-- **Within a release series only the last digit changes, and only for fixes.** In 0.11.x the
-  library's ABI and API, the account service's D-Bus interface, and the configuration and cache
-  formats stay compatible. New features, new or changed API or D-Bus methods and new file formats
+- The suite shares **major.minor**; the patch number may differ per app.
+- Within a release series (0.11.x) the library's ABI and API, the account service's D-Bus
+  interface, and the configuration formats stay compatible. A patch release holds fixes, and small
+  features only when they change none of these. New or changed library API (also only added
+  functions: an app built against 0.11.1 must still run on 0.11.0), D-Bus methods and file formats
   wait for the next minor (0.12.0) or major (1.0.0).
 - Each series has a maintenance branch named after it (`0.11`). Fixes go there and are merged into
   `main`; `main` holds the next series.

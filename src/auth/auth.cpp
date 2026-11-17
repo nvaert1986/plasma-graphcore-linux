@@ -3,25 +3,25 @@
 
 #include "auth.h"
 #include "graphcore_debug.h"
+#include "signin.h"
 
 #include <qt6keychain/keychain.h>
 
 #include <QElapsedTimer>
 #include <QEventLoop>
-#include <functional>
-#include <QThread>
-#include <QMutex>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QMutex>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QOAuth2AuthorizationCodeFlow>
 #include <QOAuthHttpServerReplyHandler>
 #include <QProcess>
-#include <QRegularExpression>
+#include <QThread>
 #include <QTimer>
 #include <QUrlQuery>
 
+#include <functional>
 #include <memory>
 
 namespace GraphCore
@@ -67,6 +67,13 @@ QString firstLine(const QJsonObject &answer)
     return answer.value(QLatin1String("error_description")).toString().section(QLatin1Char('\n'), 0, 0);
 }
 
+// Tests only (setLoginServerForTesting): a loopback server answering in place of Microsoft
+QString &testLoginServer()
+{
+    static QString server;
+    return server;
+}
+
 // QtKeychain jobs run on one thread of their own, one after the other: the secret service backend
 // answers on the thread that first used it, so jobs started on the token refresh's pool threads
 // got their answers on another thread and the daemon crashed as soon as two accounts were signed in
@@ -97,7 +104,7 @@ void onKeychainThread(const std::function<void()> &work)
 
 // A QtKeychain job to completion, in a local event loop on the keychain thread
 template<typename Job>
-bool runKeychainJob(Job *job, QString *error, bool *notFound = nullptr)
+bool runKeychainJob(Job *job, QString *error, QKeychain::Error *code = nullptr)
 {
     QEventLoop loop;
     QObject::connect(job, &QKeychain::Job::finished, &loop, &QEventLoop::quit);
@@ -105,13 +112,65 @@ bool runKeychainJob(Job *job, QString *error, bool *notFound = nullptr)
     job->start();
     loop.exec();
     const bool ok = job->error() == QKeychain::NoError;
-    if (notFound) {
-        *notFound = job->error() == QKeychain::EntryNotFound;
-    }
     if (!ok && error) {
         *error = job->errorString();
     }
+    if (code) {
+        *code = job->error();
+    }
     return ok;
+}
+
+// The three operations, each job made, run and gone on the keychain thread
+bool keychainRead(const QString &service, const QString &key, QString *data, QString *error, QKeychain::Error *code = nullptr)
+{
+    bool ok = false;
+    QString failure;
+    onKeychainThread([&] {
+        QKeychain::ReadPasswordJob job(service);
+        job.setKey(key);
+        ok = runKeychainJob(&job, &failure, code);
+        if (ok) {
+            *data = job.textData();
+        }
+    });
+    if (!ok && error) {
+        *error = failure;
+    }
+    return ok;
+}
+
+bool keychainWrite(const QString &service, const QString &key, const QString &data, QString *error)
+{
+    bool ok = false;
+    QString failure;
+    onKeychainThread([&] {
+        QKeychain::WritePasswordJob job(service);
+        job.setKey(key);
+        job.setTextData(data);
+        ok = runKeychainJob(&job, &failure);
+    });
+    if (!ok && error) {
+        *error = failure;
+    }
+    return ok;
+}
+
+void keychainDelete(const QString &service, const QString &key)
+{
+    onKeychainThread([&] {
+        QKeychain::DeletePasswordJob job(service);
+        job.setKey(key);
+        QString ignored;
+        runKeychainJob(&job, &ignored);
+    });
+}
+
+// Parts of a keychain key "tenant:client:user": none may hold the separator, and a stored sign-in
+// always belongs to a user
+bool validKeyParts(const QString &tenant, const QString &clientId, const QString &objectId)
+{
+    return SignIn::isGuid(clientId) && !tenant.isEmpty() && !tenant.contains(QLatin1Char(':')) && (objectId.isEmpty() || SignIn::isGuid(objectId));
 }
 }
 
@@ -142,7 +201,7 @@ Account Auth::accountFor(const SignedInUser &user, const QString &clientId)
 bool Auth::isConfigured() const
 {
     QMutexLocker locker(&m_refreshMutex);
-    return !m_settings.clientId.isEmpty() && !m_settings.tenant.isEmpty();
+    return validKeyParts(m_settings.tenant, m_settings.clientId, m_settings.objectId);
 }
 
 AuthSettings Auth::settings() const
@@ -157,9 +216,22 @@ SignedInUser Auth::signedInUser() const
     return m_user;
 }
 
+void Auth::setLoginServerForTesting(const QUrl &server)
+{
+    const bool loopback = server.scheme() == QLatin1String("http") && (server.host() == QLatin1String("127.0.0.1") || server.host() == QLatin1String("localhost"));
+    testLoginServer() = loopback ? server.toString(QUrl::StripTrailingSlash) : QString();
+}
+
+void Auth::setRefreshTokenForTesting(const QString &token)
+{
+    QMutexLocker locker(&m_refreshMutex);
+    m_refreshToken = token;
+}
+
 QString Auth::authority() const
 {
-    return QStringLiteral("https://login.microsoftonline.com/%1/oauth2/v2.0").arg(m_settings.tenant);
+    const QString server = testLoginServer().isEmpty() ? QStringLiteral("https://login.microsoftonline.com") : testLoginServer();
+    return server + QStringLiteral("/%1/oauth2/v2.0").arg(m_settings.tenant);
 }
 
 QString Auth::scopeString() const
@@ -174,9 +246,14 @@ QString Auth::scopeString() const
     return scopes.join(QLatin1Char(' '));
 }
 
+QString Auth::keychainKeyFor(const QString &tenant, const QString &clientId, const QString &objectId)
+{
+    return tenant + QLatin1Char(':') + clientId + QLatin1Char(':') + objectId;
+}
+
 QString Auth::keychainKey() const
 {
-    return m_settings.tenant + QLatin1Char(':') + m_settings.clientId + QLatin1Char(':') + m_settings.objectId;
+    return keychainKeyFor(m_settings.tenant, m_settings.clientId, m_settings.objectId);
 }
 
 void Auth::setToken(const QString &token, const QDateTime &expiresAt)
@@ -188,24 +265,36 @@ void Auth::setToken(const QString &token, const QDateTime &expiresAt)
 
 bool Auth::completeSignIn(const QString &accessToken, qint64 expiresInSeconds, const QString &refreshToken, const QString &idToken, QString *error)
 {
+    // Nothing changes until the new user is known and its sign-in is stored: on any failure this
+    // Auth keeps what it had
     const SignedInUser user = parseIdToken(idToken);
-    if (refreshToken.isEmpty() || user.objectId.isEmpty() || user.tenantId.isEmpty()) {
-        *error = refreshToken.isEmpty() ? QStringLiteral("no refresh token in the answer") : QStringLiteral("no usable ID token in the answer");
+    if (user.objectId.isEmpty()) {
+        // A token without its user could end up with another account
+        *error = QStringLiteral("Microsoft did not say which user signed in (no usable ID token); try again");
         return false;
     }
-    // From now on this is the user's own tenant, also when the sign-in started at "organizations"
-    m_settings.tenant = user.tenantId;
-    m_settings.objectId = user.objectId;
+    if (refreshToken.isEmpty()) {
+        *error = QStringLiteral("no refresh token in the answer");
+        return false;
+    }
+    // From now on the user's own tenant, also when the sign-in started at "organizations"
+    AuthSettings target = m_settings;
+    target.tenant = user.tenantId;
+    target.objectId = user.objectId;
+    if (!writeRefreshTokenFor(target, refreshToken, error)) {
+        return false;
+    }
+    m_settings = target;
     m_user = user;
     m_refreshToken = refreshToken;
     setToken(accessToken, QDateTime::currentDateTimeUtc().addSecs(expiresInSeconds));
-    return writeRefreshToken(refreshToken, error);
+    return true;
 }
 
 bool Auth::interactiveLogin(QString *error, const QString &loginHint)
 {
     QMutexLocker locker(&m_refreshMutex);
-    if (m_settings.clientId.isEmpty() || m_settings.tenant.isEmpty()) {
+    if (!validKeyParts(m_settings.tenant, m_settings.clientId, {})) {
         *error = QStringLiteral("no app registration (client ID) or tenant configured");
         return false;
     }
@@ -281,6 +370,10 @@ bool Auth::interactiveLogin(QString *error, const QString &loginHint)
 bool Auth::deviceCodeLogin(const std::function<void(const QString &, const QString &)> &show, const std::atomic_bool *cancel, QString *error)
 {
     QMutexLocker locker(&m_refreshMutex);
+    if (!validKeyParts(m_settings.tenant, m_settings.clientId, {})) {
+        *error = QStringLiteral("no app registration (client ID) or tenant configured");
+        return false;
+    }
     QUrlQuery request;
     request.addQueryItem(QStringLiteral("client_id"), m_settings.clientId);
     request.addQueryItem(QStringLiteral("scope"), scopeString());
@@ -351,6 +444,14 @@ QString Auth::cachedAccessToken()
 
 QString Auth::accessToken(QString *error, bool forceRefresh)
 {
+    return accessToken(error, forceRefresh, nullptr);
+}
+
+QString Auth::accessToken(QString *error, bool forceRefresh, Problem *problem)
+{
+    if (problem) {
+        *problem = Problem::None;
+    }
     if (!forceRefresh) {
         if (QString token = cachedAccessToken(); !token.isEmpty()) {
             return token;
@@ -363,21 +464,33 @@ QString Auth::accessToken(QString *error, bool forceRefresh)
             return token;
         }
     }
-    if (!refresh(error)) {
+    QString failure;
+    Problem why = Problem::None;
+    if (!refresh(&failure, &why)) {
+        if (error) {
+            *error = failure;
+        }
+        if (problem) {
+            *problem = why;
+        }
         return {};
     }
     QMutexLocker tokenLocker(&m_tokenMutex);
     return m_accessToken;
 }
 
-bool Auth::refresh(QString *error)
+bool Auth::refresh(QString *error, Problem *problem)
 {
     if (m_refreshToken.isEmpty()) {
-        m_refreshToken = readRefreshToken(error);
+        bool notFound = false;
+        QString readError;
+        m_refreshToken = readRefreshToken(&readError, &notFound);
         if (m_refreshToken.isEmpty()) {
-            if (error && error->isEmpty()) {
-                *error = QStringLiteral("not signed in");
-            }
+            // Not "no such entry" but no answer at all (the wallet not open yet at login, access
+            // refused): the sign-in is unknown, not gone
+            const bool locked = !notFound && !readError.isEmpty() && !m_settings.objectId.isEmpty();
+            *problem = locked ? Problem::KeychainLocked : Problem::NotSignedIn;
+            *error = locked ? QStringLiteral("the keychain cannot be read: ") + readError : QStringLiteral("not signed in");
             return false;
         }
     }
@@ -391,17 +504,26 @@ bool Auth::refresh(QString *error)
     QString networkError;
     const QJsonObject body = postForm(QUrl(authority() + QStringLiteral("/token")), form, &networkError);
     if (!body.contains(QLatin1String("access_token"))) {
+        const QString code = body.value(QLatin1String("error")).toString();
         const QString description = firstLine(body);
-        // Callers tell these apart: only "sign-in expired" means signing in again; no answer at
-        // all (offline, no DNS) is a connection problem that goes away by itself
-        if (body.value(QLatin1String("error")).toString() == QLatin1String("invalid_grant")) {
+        // Only "sign-in expired" and missing consent need the user; no answer at all (offline,
+        // no DNS) is a connection problem that goes away by itself
+        if (SignIn::needsAdminConsent(description) || code == QLatin1String("consent_required")) {
+            // The refresh token is fine: only these permissions are not approved (Graph Mail's
+            // lesson: AADSTS65001 comes as invalid_grant, and must not cost the whole sign-in)
+            *problem = Problem::ConsentRequired;
+            *error = QStringLiteral("consent required: ") + description;
+        } else if (code == QLatin1String("invalid_grant")) {
             // The refresh token is dead (revoked, expired, password change)
             m_refreshToken.clear();
+            *problem = Problem::SignInExpired;
             *error = QStringLiteral("sign-in expired: ") + description;
         } else if (body.isEmpty()) {
+            *problem = Problem::Offline;
             *error = QStringLiteral("no connection: ") + networkError;
         } else {
-            *error = description.isEmpty() ? body.value(QLatin1String("error")).toString() : description;
+            *problem = Problem::Other;
+            *error = description.isEmpty() ? code : description;
         }
         return false;
     }
@@ -412,7 +534,7 @@ bool Auth::refresh(QString *error)
     if (!rotated.isEmpty() && rotated != m_refreshToken) {
         m_refreshToken = rotated;
         QString writeError;
-        if (!writeRefreshToken(rotated, &writeError)) {
+        if (!writeRefreshTokenFor(m_settings, rotated, &writeError)) {
             qCWarning(GRAPHCORE) << "Could not store the rotated refresh token:" << writeError;
         }
     }
@@ -421,13 +543,7 @@ bool Auth::refresh(QString *error)
 
 bool Auth::hasStoredRefreshToken()
 {
-    QMutexLocker locker(&m_refreshMutex);
-    if (!m_refreshToken.isEmpty()) {
-        return true;
-    }
-    QString error;
-    m_refreshToken = readRefreshToken(&error);
-    return !m_refreshToken.isEmpty();
+    return storedRefreshToken() == StoredToken::Present;
 }
 
 Auth::StoredToken Auth::storedRefreshToken()
@@ -442,7 +558,7 @@ Auth::StoredToken Auth::storedRefreshToken()
     if (!m_refreshToken.isEmpty()) {
         return StoredToken::Present;
     }
-    // No object id: never signed in with this app; an empty entry counts as none
+    // No object id: never signed in; an empty entry counts as none
     return m_settings.objectId.isEmpty() || notFound || error.isEmpty() ? StoredToken::Missing : StoredToken::Unknown;
 }
 
@@ -451,107 +567,73 @@ void Auth::logout()
     QMutexLocker locker(&m_refreshMutex);
     setToken({}, {});
     m_refreshToken.clear();
-    if (m_settings.objectId.isEmpty()) {
+    if (m_settings.objectId.isEmpty() || !validKeyParts(m_settings.tenant, m_settings.clientId, m_settings.objectId)) {
+        // Nothing of a user to remove
         return;
     }
-    onKeychainThread([this] {
-        QKeychain::DeletePasswordJob job(m_settings.keychainService);
-        job.setKey(keychainKey());
-        QString error;
-        runKeychainJob(&job, &error);
-    });
-}
-
-QUrl Auth::adminConsentUrl(const QString &tenant, const QString &clientId)
-{
-    QUrl url(QStringLiteral("https://login.microsoftonline.com/%1/adminconsent").arg(tenant.isEmpty() ? QStringLiteral("organizations") : tenant));
-    QUrlQuery query;
-    query.addQueryItem(QStringLiteral("client_id"), clientId);
-    url.setQuery(query);
-    return url;
-}
-
-bool Auth::isGuid(const QString &text)
-{
-    static const QRegularExpression guid(QStringLiteral("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"));
-    return guid.match(text).hasMatch();
+    keychainDelete(m_settings.keychainService, keychainKey());
 }
 
 SignedInUser Auth::parseIdToken(const QString &idToken)
 {
     const QJsonObject claims = jwtClaims(idToken);
-    return {claims.value(QLatin1String("oid")).toString(),
-            claims.value(QLatin1String("preferred_username")).toString(),
-            claims.value(QLatin1String("name")).toString(),
-            claims.value(QLatin1String("tid")).toString()};
-}
-
-Auth::SetupText Auth::parseSetupText(const QString &text)
-{
-    static const QRegularExpression client(QStringLiteral("ClientId\\s*[=:]\\s*([0-9a-fA-F-]{36})"), QRegularExpression::CaseInsensitiveOption);
-    static const QRegularExpression tenant(QStringLiteral("TenantId\\s*[=:]\\s*([^\\s;,]+)"), QRegularExpression::CaseInsensitiveOption);
-    return {client.match(text).captured(1), tenant.match(text).captured(1)};
-}
-
-QString Auth::resolveTenant(const QString &input, bool *offline)
-{
-    *offline = false;
-    QString value = input.trimmed();
-    if (isGuid(value)) {
-        return value.toLower();
-    }
-    // A work e-mail address stands for its domain
-    value = value.section(QLatin1Char('@'), -1).toLower();
-    static const QRegularExpression domain(QStringLiteral("^[a-z0-9-]+(\\.[a-z0-9-]+)+$"));
-    if (!domain.match(value).hasMatch()) {
+    SignedInUser user{SignIn::normalizedId(claims.value(QLatin1String("oid")).toString()),
+                      claims.value(QLatin1String("preferred_username")).toString(),
+                      claims.value(QLatin1String("name")).toString(),
+                      SignIn::normalizedId(claims.value(QLatin1String("tid")).toString())};
+    if (!SignIn::isGuid(user.objectId) || !SignIn::isGuid(user.tenantId)) {
         return {};
     }
-
-    QNetworkAccessManager nam;
-    QNetworkRequest request(QUrl(QStringLiteral("https://login.microsoftonline.com/%1/v2.0/.well-known/openid-configuration").arg(value)));
-    request.setTransferTimeout(30 * 1000);
-    QNetworkReply *reply = nam.get(request);
-    QEventLoop loop;
-    QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-    loop.exec();
-    reply->deleteLater();
-    const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    if (status == 0) {
-        *offline = true;
-        return {};
-    }
-    // "issuer": "https://login.microsoftonline.com/<tenant id>/v2.0"
-    const QString issuer = QJsonDocument::fromJson(reply->readAll()).object().value(QLatin1String("issuer")).toString();
-    const QString tenantId = QUrl(issuer).path().section(QLatin1Char('/'), 1, 1);
-    return isGuid(tenantId) ? tenantId.toLower() : QString();
+    return user;
 }
 
 QString Auth::readRefreshToken(QString *error, bool *notFound)
 {
-    if (m_settings.objectId.isEmpty()) {
+    // Every stored sign-in belongs to a user
+    if (m_settings.objectId.isEmpty() || !validKeyParts(m_settings.tenant, m_settings.clientId, m_settings.objectId)) {
+        if (notFound) {
+            *notFound = true;
+        }
         return {};
     }
     QString token;
-    onKeychainThread([&] {
-        QKeychain::ReadPasswordJob job(m_settings.keychainService);
-        job.setKey(keychainKey());
-        if (runKeychainJob(&job, error, notFound)) {
-            token = job.textData();
+    QKeychain::Error code = QKeychain::NoError;
+    if (!keychainRead(m_settings.keychainService, keychainKey(), &token, error, &code)) {
+        if (notFound) {
+            *notFound = code == QKeychain::EntryNotFound;
         }
-    });
+        return {};
+    }
     return token;
 }
 
-bool Auth::writeRefreshToken(const QString &token, QString *error)
+bool Auth::writeRefreshTokenFor(const AuthSettings &settings, const QString &token, QString *error)
 {
-    bool ok = false;
-    onKeychainThread([&] {
-        QKeychain::WritePasswordJob job(m_settings.keychainService);
-        job.setKey(keychainKey());
-        job.setTextData(token);
-        ok = runKeychainJob(&job, error);
-    });
-    return ok;
+    // Only under a user's own key, with parts that cannot hold the key's separator
+    if (settings.objectId.isEmpty() || !validKeyParts(settings.tenant, settings.clientId, settings.objectId)) {
+        *error = QStringLiteral("no signed-in user to store the sign-in for");
+        return false;
+    }
+    return keychainWrite(settings.keychainService, keychainKeyFor(settings.tenant, settings.clientId, settings.objectId), token, error);
+}
+
+Auth::CopyResult Auth::copyToken(const QString &fromService, const QString &fromKey, const QString &toService, const QString &toKey, bool removeSource, QString *error)
+{
+    QString token;
+    QKeychain::Error code = QKeychain::NoError;
+    if (!keychainRead(fromService, fromKey, &token, error, &code)) {
+        return code == QKeychain::EntryNotFound ? CopyResult::NotFound : CopyResult::Failed;
+    }
+    if (token.isEmpty()) {
+        return CopyResult::NotFound;
+    }
+    if (!keychainWrite(toService, toKey, token, error)) {
+        return CopyResult::Failed;
+    }
+    if (removeSource && (fromService != toService || fromKey != toKey)) {
+        keychainDelete(fromService, fromKey);
+    }
+    return CopyResult::Copied;
 }
 
 }

@@ -2,22 +2,42 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "auth.h"
+#include "fakegraphserver.h"
 
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QStandardPaths>
+#include <QTcpServer>
 #include <QTest>
 #include <QUrlQuery>
 
 using namespace GraphCore;
 
+// Nothing here reads or writes the real keychain: tokens come from setRefreshTokenForTesting and
+// the fake login server never hands out a new refresh token
+
 namespace
 {
+const QString client = QStringLiteral("0a1b2c3d-4e5f-6789-abcd-ef0123456789");
+const QString tenant = QStringLiteral("11111111-2222-3333-4444-555555555555");
+const QString user = QStringLiteral("99999999-8888-7777-6666-555555555555");
+
 QString makeJwt(const QJsonObject &claims)
 {
     const QByteArray header = QByteArray(R"({"alg":"none"})").toBase64(QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals);
     const QByteArray payload = QJsonDocument(claims).toJson(QJsonDocument::Compact).toBase64(QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals);
     return QString::fromLatin1(header + '.' + payload + ".sig");
+}
+
+AuthSettings signedIn()
+{
+    return {QStringLiteral("graphcore-test"), client, tenant, user, {QStringLiteral("User.Read")}};
+}
+
+FakeReply loginError(const char *code, const char *description)
+{
+    return jsonReply(400, QJsonDocument(QJsonObject{{QStringLiteral("error"), QLatin1String(code)}, {QStringLiteral("error_description"), QLatin1String(description)}})
+                              .toJson(QJsonDocument::Compact));
 }
 }
 
@@ -25,77 +45,42 @@ class AuthTest : public QObject
 {
     Q_OBJECT
 
+private:
+    std::unique_ptr<FakeGraphServer> server;
+
 private Q_SLOTS:
     void initTestCase()
     {
         QStandardPaths::setTestModeEnabled(true);
     }
 
-    void isGuid()
+    void init()
     {
-        QVERIFY(Auth::isGuid(QStringLiteral("0a1b2c3d-4e5f-6789-abcd-ef0123456789")));
-        QVERIFY(Auth::isGuid(QStringLiteral("0A1B2C3D-4E5F-6789-ABCD-EF0123456789")));
-        QVERIFY(!Auth::isGuid(QStringLiteral("0a1b2c3d-4e5f-6789-abcd-ef012345678")));
-        QVERIFY(!Auth::isGuid(QStringLiteral(" 0a1b2c3d-4e5f-6789-abcd-ef0123456789")));
-        QVERIFY(!Auth::isGuid(QStringLiteral("contoso.onmicrosoft.com")));
+        server = std::make_unique<FakeGraphServer>();
+        Auth::setLoginServerForTesting(QUrl(QStringLiteral("http://127.0.0.1:%1").arg(server->port())));
     }
 
-    void parseSetupText_data()
+    void cleanup()
     {
-        QTest::addColumn<QString>("text");
-        QTest::addColumn<QString>("clientId");
-        QTest::addColumn<QString>("tenant");
-        const QString client = QStringLiteral("0a1b2c3d-4e5f-6789-abcd-ef0123456789");
-        const QString tenant = QStringLiteral("11111111-2222-3333-4444-555555555555");
-        QTest::newRow("rc group") << QStringLiteral("[Auth]\nClientId=%1\nTenantId=%2\n").arg(client, tenant) << client << tenant;
-        QTest::newRow("one line") << QStringLiteral("ClientId=%1 TenantId=%2").arg(client, tenant) << client << tenant;
-        QTest::newRow("colons, domain") << QStringLiteral("clientid: %1 tenantid: contoso.com").arg(client) << client << QStringLiteral("contoso.com");
-        QTest::newRow("client only") << QStringLiteral("ClientId = %1").arg(client) << client << QString();
-        QTest::newRow("bare id is not setup text") << client << QString() << QString();
-    }
-    void parseSetupText()
-    {
-        QFETCH(QString, text);
-        QFETCH(QString, clientId);
-        QFETCH(QString, tenant);
-        const Auth::SetupText setup = Auth::parseSetupText(text);
-        QCOMPARE(setup.clientId, clientId);
-        QCOMPARE(setup.tenant, tenant);
-    }
-
-    void resolveTenantWithoutNetwork()
-    {
-        bool offline = true;
-        // A tenant ID needs no lookup; rubbish is refused before any request
-        QCOMPARE(Auth::resolveTenant(QStringLiteral(" 11111111-2222-3333-4444-55555555555A "), &offline),
-                 QStringLiteral("11111111-2222-3333-4444-55555555555a"));
-        QVERIFY(!offline);
-        QCOMPARE(Auth::resolveTenant(QStringLiteral("not a domain"), &offline), QString());
-        QCOMPARE(Auth::resolveTenant(QStringLiteral("someone@"), &offline), QString());
-        QVERIFY(!offline);
+        Auth::setLoginServerForTesting({});
+        server.reset();
     }
 
     void parseIdToken()
     {
-        const QString token = makeJwt({{QStringLiteral("oid"), QStringLiteral("user-1")},
-                                       {QStringLiteral("tid"), QStringLiteral("tenant-1")},
+        const QString token = makeJwt({{QStringLiteral("oid"), user.toUpper()},
+                                       {QStringLiteral("tid"), tenant},
                                        {QStringLiteral("preferred_username"), QStringLiteral("someone@example.com")},
                                        {QStringLiteral("name"), QStringLiteral("Some One")}});
-        const SignedInUser user = Auth::parseIdToken(token);
-        QCOMPARE(user.objectId, QStringLiteral("user-1"));
-        QCOMPARE(user.tenantId, QStringLiteral("tenant-1"));
-        QCOMPARE(user.userPrincipalName, QStringLiteral("someone@example.com"));
-        QCOMPARE(user.displayName, QStringLiteral("Some One"));
+        const SignedInUser parsed = Auth::parseIdToken(token);
+        // IDs as stored: lower case
+        QCOMPARE(parsed.objectId, user);
+        QCOMPARE(parsed.tenantId, tenant);
+        QCOMPARE(parsed.userPrincipalName, QStringLiteral("someone@example.com"));
+        QCOMPARE(parsed.displayName, QStringLiteral("Some One"));
         QVERIFY(Auth::parseIdToken(QStringLiteral("garbage")).objectId.isEmpty());
-    }
-
-    void adminConsentUrl()
-    {
-        const QUrl url = Auth::adminConsentUrl(QStringLiteral("tenant-1"), QStringLiteral("client-1"));
-        QCOMPARE(url.host(), QStringLiteral("login.microsoftonline.com"));
-        QCOMPARE(url.path(), QStringLiteral("/tenant-1/adminconsent"));
-        QCOMPARE(QUrlQuery(url).queryItemValue(QStringLiteral("client_id")), QStringLiteral("client-1"));
-        QCOMPARE(Auth::adminConsentUrl({}, QStringLiteral("c")).path(), QStringLiteral("/organizations/adminconsent"));
+        // A token that names no real user is no sign-in at all
+        QVERIFY(Auth::parseIdToken(makeJwt({{QStringLiteral("oid"), QStringLiteral("user-1")}, {QStringLiteral("tid"), tenant}})).objectId.isEmpty());
     }
 
     void settingsForAccount()
@@ -114,20 +99,128 @@ private Q_SLOTS:
         QCOMPARE(Auth::settingsFor(account, QStringLiteral("svc"), {}).clientId, QStringLiteral("own-client"));
 
         // Only a registration other than the default is remembered on the account
-        const SignedInUser user{QStringLiteral("o"), QStringLiteral("u@example.com"), QStringLiteral("U"), QStringLiteral("t")};
-        QVERIFY(Auth::accountFor(user, QStringLiteral("default-client")).clientId.isEmpty());
-        QCOMPARE(Auth::accountFor(user, QStringLiteral("other")).clientId, QStringLiteral("other"));
+        const SignedInUser who{QStringLiteral("o"), QStringLiteral("u@example.com"), QStringLiteral("U"), QStringLiteral("t")};
+        QVERIFY(Auth::accountFor(who, QStringLiteral("default-client")).clientId.isEmpty());
+        QCOMPARE(Auth::accountFor(who, QStringLiteral("other")).clientId, QStringLiteral("other"));
+    }
+
+    void keyParts()
+    {
+        // A first sign-in: any work account of any organisation
+        QVERIFY(Auth({QStringLiteral("svc"), client, QStringLiteral("organizations"), {}, {}}).isConfigured());
+        QVERIFY(Auth(signedIn()).isConfigured());
+        // Nothing that could break the key "tenant:client:user" or is not an ID
+        QVERIFY(!Auth({QStringLiteral("svc"), QStringLiteral("c"), tenant, {}, {}}).isConfigured());
+        QVERIFY(!Auth({QStringLiteral("svc"), client, QStringLiteral("a:b"), {}, {}}).isConfigured());
+        QVERIFY(!Auth({QStringLiteral("svc"), client, tenant, QStringLiteral("someone"), {}}).isConfigured());
+        QVERIFY(!Auth({QStringLiteral("svc"), client, QString(), {}, {}}).isConfigured());
+        QCOMPARE(Auth::keychainKeyFor(tenant, client, user), tenant + QLatin1Char(':') + client + QLatin1Char(':') + user);
     }
 
     void notSignedInWithoutObjectId()
     {
         // Before a sign-in there is no user, so nothing is read from the keychain
-        Auth auth({QStringLiteral("graphcore-test"), QStringLiteral("c"), QStringLiteral("organizations"), {}, {}});
-        QVERIFY(auth.isConfigured());
+        Auth auth({QStringLiteral("graphcore-test"), client, QStringLiteral("organizations"), {}, {}});
         QVERIFY(auth.cachedAccessToken().isEmpty());
         QString error;
-        QVERIFY(auth.accessToken(&error).isEmpty());
+        Auth::Problem problem = Auth::Problem::None;
+        QVERIFY(auth.accessToken(&error, false, &problem).isEmpty());
         QCOMPARE(error, QStringLiteral("not signed in"));
+        QCOMPARE(problem, Auth::Problem::NotSignedIn);
+        QCOMPARE(auth.storedRefreshToken(), Auth::StoredToken::Missing);
+        QVERIFY(server->requests.isEmpty());
+    }
+
+    void refreshGivesAToken()
+    {
+        server->handler = [](const FakeRequest &) {
+            return jsonReply(200, R"({"access_token":"at-1","expires_in":3600})");
+        };
+        Auth auth(signedIn());
+        auth.setRefreshTokenForTesting(QStringLiteral("rt-1"));
+        QString error;
+        Auth::Problem problem = Auth::Problem::Other;
+        QCOMPARE(auth.accessToken(&error, false, &problem), QStringLiteral("at-1"));
+        QCOMPARE(problem, Auth::Problem::None);
+        QCOMPARE(server->requests.size(), 1);
+        const FakeRequest &request = server->requests.first();
+        QCOMPARE(request.target, QByteArray("/") + tenant.toLatin1() + "/oauth2/v2.0/token");
+        const QUrlQuery form(QString::fromUtf8(request.body));
+        QCOMPARE(form.queryItemValue(QStringLiteral("grant_type")), QStringLiteral("refresh_token"));
+        QCOMPARE(form.queryItemValue(QStringLiteral("refresh_token")), QStringLiteral("rt-1"));
+        QVERIFY(form.queryItemValue(QStringLiteral("scope"), QUrl::FullyDecoded).split(QLatin1Char(' ')).contains(QStringLiteral("offline_access")));
+        // Cached: no second request
+        QCOMPARE(auth.accessToken(&error), QStringLiteral("at-1"));
+        QCOMPARE(auth.cachedAccessToken(), QStringLiteral("at-1"));
+        QCOMPARE(server->requests.size(), 1);
+    }
+
+    void missingConsentKeepsTheSignIn()
+    {
+        // AADSTS65001 comes as invalid_grant, but the refresh token is fine: only these permissions
+        // are not approved. The sign-in must stay (Graph Mail lost whole tokens to this once)
+        server->handler = [](const FakeRequest &) {
+            return loginError("invalid_grant", "AADSTS65001: The user or administrator has not consented to use the application.\nTrace ID: x");
+        };
+        Auth auth(signedIn());
+        auth.setRefreshTokenForTesting(QStringLiteral("rt-1"));
+        QString error;
+        Auth::Problem problem = Auth::Problem::None;
+        QVERIFY(auth.accessToken(&error, false, &problem).isEmpty());
+        QCOMPARE(problem, Auth::Problem::ConsentRequired);
+        QVERIFY(error.contains(QLatin1String("AADSTS65001")));
+        QVERIFY(!error.contains(QLatin1String("Trace ID")));
+        // Asked again: the same refresh token goes out (not read from the keychain, not gone)
+        QVERIFY(auth.accessToken(&error, false, &problem).isEmpty());
+        QCOMPARE(server->requests.size(), 2);
+        QCOMPARE(QUrlQuery(QString::fromUtf8(server->requests.at(1).body)).queryItemValue(QStringLiteral("refresh_token")), QStringLiteral("rt-1"));
+    }
+
+    void expiredSignIn()
+    {
+        server->handler = [](const FakeRequest &) {
+            return loginError("invalid_grant", "AADSTS70008: The provided authorization code or refresh token has expired");
+        };
+        Auth auth(signedIn());
+        auth.setRefreshTokenForTesting(QStringLiteral("rt-1"));
+        QString error;
+        Auth::Problem problem = Auth::Problem::None;
+        QVERIFY(auth.accessToken(&error, false, &problem).isEmpty());
+        QCOMPARE(problem, Auth::Problem::SignInExpired);
+        QVERIFY(error.startsWith(QLatin1String("sign-in expired")));
+        // (Not asked again: the dead token is dropped, a second call would read the keychain)
+    }
+
+    void otherRefusal()
+    {
+        server->handler = [](const FakeRequest &) {
+            return loginError("invalid_request", "AADSTS900144: The request body must contain the following parameter");
+        };
+        Auth auth(signedIn());
+        auth.setRefreshTokenForTesting(QStringLiteral("rt-1"));
+        QString error;
+        Auth::Problem problem = Auth::Problem::None;
+        QVERIFY(auth.accessToken(&error, false, &problem).isEmpty());
+        QCOMPARE(problem, Auth::Problem::Other);
+    }
+
+    void offline()
+    {
+        // A port nobody listens on: no answer at all
+        quint16 closed = 0;
+        {
+            QTcpServer probe;
+            QVERIFY(probe.listen(QHostAddress::LocalHost, 0));
+            closed = probe.serverPort();
+        }
+        Auth::setLoginServerForTesting(QUrl(QStringLiteral("http://127.0.0.1:%1").arg(closed)));
+        Auth auth(signedIn());
+        auth.setRefreshTokenForTesting(QStringLiteral("rt-1"));
+        QString error;
+        Auth::Problem problem = Auth::Problem::None;
+        QVERIFY(auth.accessToken(&error, false, &problem).isEmpty());
+        QCOMPARE(problem, Auth::Problem::Offline);
+        QVERIFY(error.startsWith(QLatin1String("no connection")));
     }
 };
 

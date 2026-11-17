@@ -19,8 +19,7 @@ namespace GraphCore
 {
 
 struct AuthSettings {
-    // Keychain service the refresh token is stored under (one per app until the account service
-    // owns the tokens)
+    // Keychain service the refresh token is stored under (the account service's own)
     QString keychainService;
     QString clientId;
     // A tenant ID, or "organizations" for a first sign-in where the user picks any work account
@@ -40,8 +39,11 @@ struct SignedInUser {
 
 // Entra ID sign-in for one account with a public client (authorization code + PKCE, or a device
 // code). The refresh token lives in the system keychain (KWallet / Secret Service) under
-// tenant:client:user; access tokens only in memory. Thread-safe: sync workers call accessToken()
-// from their own threads, the UI calls cachedAccessToken(), which never waits for a refresh.
+// tenant:client:user; access tokens only in memory. Thread-safe: callers ask accessToken() from
+// their own threads; cachedAccessToken() never waits for a refresh.
+//
+// Only the account service (graphaccountsd) uses this: it is the one holder of refresh tokens.
+// Merged from Graph Mail's and Graph Sync's own copies (phase 10).
 class Auth : public TokenProvider
 {
 public:
@@ -52,18 +54,13 @@ public:
     // The account to store after a sign-in (organisation still empty: it comes from Graph)
     static Account accountFor(const SignedInUser &user, const QString &clientId);
 
+    // A registration (client ID) and a tenant to sign in to, parts that fit in a keychain key
     bool isConfigured() const;
     AuthSettings settings() const;
 
     // Opens the browser and blocks (with a local event loop) until the redirect arrives.
     // Must run in a thread with an event loop. loginHint pre-fills the account picker.
     bool interactiveLogin(QString *error, const QString &loginHint = {});
-    // Signing in through the browser needs Qt 6.9 (scope tokens, the "localhost" callback host, the
-    // ID token); older systems sign in with a code only
-    static constexpr bool browserLoginAvailable()
-    {
-        return QT_VERSION >= QT_VERSION_CHECK(6, 9, 0);
-    }
     // Sign-in with a short code entered at the shown address, on any device. show() gets the code
     // and the address as soon as they are known; then this blocks until the user is done, the
     // code expires or cancel is set. Needs "Allow public client flows" on the app registration.
@@ -71,6 +68,18 @@ public:
     // After a sign-in: the user, whose tenant and object id the settings now carry
     SignedInUser signedInUser() const;
 
+    // Why a token could not be had. Only SignInExpired and ConsentRequired need the user; Offline
+    // and KeychainLocked go away by themselves
+    enum class Problem {
+        None,
+        NotSignedIn,
+        SignInExpired,
+        ConsentRequired,
+        Offline,
+        KeychainLocked,
+        Other,
+    };
+    QString accessToken(QString *error, bool forceRefresh, Problem *problem);
     QString accessToken(QString *error, bool forceRefresh = false) override;
     QString cachedAccessToken() override;
 
@@ -81,35 +90,36 @@ public:
     StoredToken storedRefreshToken();
     void logout();
 
-    // Microsoft's page where a tenant administrator approves every permission of the app
-    // registration for the whole organisation, once
-    static QUrl adminConsentUrl(const QString &tenant, const QString &clientId);
-    // The tenant ID for what the user typed: a tenant ID, a domain or a work e-mail address.
-    // Domains are looked up in the identity platform's public OpenID document (no sign-in
-    // needed). Blocking. Empty when not found; *offline tells a missing connection apart
-    static QString resolveTenant(const QString &input, bool *offline);
-    static bool isGuid(const QString &text);
-    // The claims of an ID token we care about; empty fields when it cannot be read
+    // The claims of an ID token we care about (IDs in lower case); empty fields when it cannot be
+    // read or names no user
     static SignedInUser parseIdToken(const QString &idToken);
 
-    // Client ID and tenant from a setup text handed out by IT ("ClientId=... TenantId=...", in
-    // any layout); fields not found stay empty
-    struct SetupText {
-        QString clientId;
-        QString tenant;
-    };
-    static SetupText parseSetupText(const QString &text);
+    // The keychain entry name of a sign-in: tenant:client:user
+    static QString keychainKeyFor(const QString &tenant, const QString &clientId, const QString &objectId);
+    // Copies a refresh token between two keychain entries (the account service taking over the
+    // apps' sign-ins); the source stays unless removeSource. NotFound: the source has none;
+    // Failed: the keychain could not be read or written (locked), try again later
+    enum class CopyResult { Copied, NotFound, Failed };
+    static CopyResult copyToken(const QString &fromService, const QString &fromKey, const QString &toService, const QString &toKey, bool removeSource, QString *error);
+
+    // Tests only: token requests go to this loopback server (http://127.0.0.1:<port>) instead of
+    // Microsoft; any other address is ignored, so a sign-in is never sent anywhere else
+    static void setLoginServerForTesting(const QUrl &server);
+    // Tests only: a refresh token in memory, as after a sign-in (no keychain involved)
+    void setRefreshTokenForTesting(const QString &token);
 
 private:
     QString authority() const;
     QString scopeString() const;
     QString keychainKey() const;
-    bool refresh(QString *error);
+    bool refresh(QString *error, Problem *problem);
+    // The end of every sign-in: stores the refresh token under the new user's key first; nothing
+    // else changes unless that worked
     bool completeSignIn(const QString &accessToken, qint64 expiresInSeconds, const QString &refreshToken, const QString &idToken, QString *error);
     void setToken(const QString &token, const QDateTime &expiresAt);
 
     QString readRefreshToken(QString *error, bool *notFound = nullptr);
-    bool writeRefreshToken(const QString &token, QString *error);
+    static bool writeRefreshTokenFor(const AuthSettings &settings, const QString &token, QString *error);
 
     // m_refreshMutex serialises sign-ins and refreshes (network round trips); m_tokenMutex only
     // guards the cached access token, so cachedAccessToken() never waits for a refresh. Recursive:

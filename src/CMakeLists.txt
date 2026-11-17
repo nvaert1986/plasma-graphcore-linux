@@ -29,6 +29,7 @@ set(graphcore_HEADERS
     lib/graphutil.h
     lib/ratelimiter.h
     lib/scopes.h
+    lib/signin.h
     lib/throttle.h
     lib/tokenprovider.h
 )
@@ -41,6 +42,7 @@ target_sources(graphcore PRIVATE
     lib/graphresponse.cpp
     lib/graphutil.cpp
     lib/ratelimiter.cpp
+    lib/signin.cpp
     lib/throttle.cpp
     ${graphcore_HEADERS}
 )

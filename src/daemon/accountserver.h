@@ -61,6 +61,8 @@ private:
     // The account's state, made (again) when the account is new or changed in graphaccountsrc
     std::shared_ptr<State> stateFor(const QString &id);
     void setStatus(const std::shared_ptr<State> &state, const QString &status, const QString &problem);
+    // The apps' own stored sign-ins of an account, once the service's own works: removed
+    void removeEarlierSignIns(const std::shared_ptr<State> &state);
     void finishSignIn(const QString &request, const QString &clientId, const SignedInUser &user, const QString &organization, bool ok, const QString &error);
     void refuse(const QString &problem, const QString &text);
 

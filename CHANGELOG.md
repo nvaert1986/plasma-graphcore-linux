@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.13.0 (in development)
+
+**Changed**
+- Once the account service has used its own sign-in of an account, it removes the copies the apps
+  stored before it existed (Graph Mail's and Graph Sync's own keychain entries). Versions of the apps
+  from before 0.11 then have to sign in again.
+
 ## 0.12.0 (2026-11-17)
 
 **New**

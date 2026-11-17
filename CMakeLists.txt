@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.25)
 
 # The shared Microsoft Graph core of the suite (Graph Mail, Graph Sync): accounts, the Graph client
 # and the account service that owns the sign-in
-project(plasma-graphcore-linux VERSION 0.12.0 LANGUAGES CXX)
+project(plasma-graphcore-linux VERSION 0.13.0 LANGUAGES CXX)
 
 # The floor of the apps that use it
 set(QT_MIN_VERSION "6.8.0")

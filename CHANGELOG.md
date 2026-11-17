@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.12.0 (in development)
+
+**New**
+- UpdateChecker: the update check of the suite's apps (once a day GitHub's newest release of the
+  app's repository, the announced and the skipped version kept in the app's state folder). Graph
+  Sync's own check moved here; Graph Mail uses it too.
+
 ## 0.11.0 (2026-11-17)
 
 First version, numbered like the suite's apps that use it.

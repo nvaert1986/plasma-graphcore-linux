@@ -6,6 +6,7 @@ ecm_add_tests(
     graphutiltest.cpp
     graphclienttest.cpp
     signintest.cpp
+    updatechecktest.cpp
     LINK_LIBRARIES GraphCore::GraphCore Qt6::Test
 )
 

@@ -5,8 +5,9 @@ The shared Microsoft Graph core of a small suite of KDE Plasma apps for Microsof
 and Graph Mail (mail, calendar, contacts and tasks for Exchange Online). Every app of the suite
 uses this core, so one sign-in per organisation is enough for all of them.
 
-**Status:** version 0.11.0, in development. The suite's apps keep one version number. There is no
-stable API or ABI yet (SOVERSION 0).
+**Status:** 0.12.0 in development on `main`; 0.11.x (fixes) on branch `0.11`. The suite's apps
+share major.minor. Within a series the library's ABI and API stay compatible (CONTRIBUTING.md); the
+library is named after its series (`libgraphcore.so.0.12`).
 
 > **Experimental: use at your own risk.** This is young software that handles your Microsoft 365
 > sign-in. Not affiliated with or endorsed by Microsoft.
@@ -19,8 +20,9 @@ stable API or ABI yet (SOVERSION 0).
   the browser or with a code entered on any device, refreshes tokens, tells the apps when a sign-in
   has expired, and signs out for every app at once. D-Bus starts it when an app first needs it.
 - **libgraphcore**, the library the apps link: accounts (`graphaccountsrc`), the client of the
-  account service, a Microsoft Graph client with throttling, retries and connectivity checks, and
-  the helpers the apps' sign-in screens need. CMake package `GraphCore`.
+  account service, a Microsoft Graph client with throttling, retries and connectivity checks, the
+  helpers the apps' sign-in screens need, and the apps' daily check for a new release on GitHub.
+  CMake package `GraphCore`.
 - **graphaccountsctl**: the account service from the command line (`list`, `login`, `logout`,
   `check`). It never prints a token.
 

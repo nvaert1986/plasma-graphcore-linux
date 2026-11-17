@@ -37,6 +37,7 @@ set(graphcore_HEADERS
     lib/signin.h
     lib/throttle.h
     lib/tokenprovider.h
+    lib/updatecheck.h
 )
 
 target_sources(graphcore PRIVATE
@@ -50,6 +51,7 @@ target_sources(graphcore PRIVATE
     lib/serviceclient.cpp
     lib/signin.cpp
     lib/throttle.cpp
+    lib/updatecheck.cpp
     ${graphcore_HEADERS}
 )
 

@@ -20,7 +20,10 @@ struct Person {
     // The directory id (empty for someone outside the organisation)
     QString id;
     QString name;
+    // The main address
     QString email;
+    // Every address, the main one first (the people one works with may have several)
+    QStringList emails;
     QString jobTitle;
     QString department;
 };

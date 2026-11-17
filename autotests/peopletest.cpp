@@ -35,7 +35,7 @@ private Q_SLOTS:
     void parseAndMerge()
     {
         const QJsonObject relevantAnswer = QJsonDocument::fromJson(R"({"value":[
-            {"id":"p1","displayName":"Adele Vance","jobTitle":"Retail Manager","scoredEmailAddresses":[{"address":"adele.vance@contoso.com"}]},
+            {"id":"p1","displayName":"Adele Vance","jobTitle":"Retail Manager","scoredEmailAddresses":[{"address":"adele.vance@contoso.com"},{"address":"adele@contoso.com"}]},
             {"id":"p2","displayName":"No Address","scoredEmailAddresses":[]}]})").object();
         const QJsonObject directoryAnswer = QJsonDocument::fromJson(R"({"value":[
             {"id":"u1","displayName":"Adele Vance","mail":"ADELE.VANCE@contoso.com"},
@@ -45,6 +45,8 @@ private Q_SLOTS:
         QCOMPARE(relevant.size(), 2);
         QCOMPARE(relevant.at(0).email, QStringLiteral("adele.vance@contoso.com"));
         QCOMPARE(relevant.at(0).jobTitle, QStringLiteral("Retail Manager"));
+        QCOMPARE(relevant.at(0).emails, QStringList({QStringLiteral("adele.vance@contoso.com"), QStringLiteral("adele@contoso.com")}));
+        QVERIFY(relevant.at(1).emails.isEmpty());
         const QList<People::Person> directory = People::parseDirectory(directoryAnswer);
         QCOMPARE(directory.at(1).email, QStringLiteral("room@contoso.com"));
         // Relevant first, Adele once, the one without an address left out

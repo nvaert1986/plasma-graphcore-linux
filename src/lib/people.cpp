@@ -65,10 +65,18 @@ QList<Person> parseRelevant(const QJsonObject &answer)
     const QJsonArray values = answer.value(QLatin1String("value")).toArray();
     for (const QJsonValue &value : values) {
         const QJsonObject p = value.toObject();
+        QStringList emails;
         const QJsonArray addresses = p.value(QLatin1String("scoredEmailAddresses")).toArray();
+        for (const QJsonValue &address : addresses) {
+            const QString text = address.toObject().value(QLatin1String("address")).toString();
+            if (!text.isEmpty()) {
+                emails.append(text);
+            }
+        }
         people.append({p.value(QLatin1String("id")).toString(),
                        p.value(QLatin1String("displayName")).toString(),
-                       addresses.isEmpty() ? QString() : addresses.first().toObject().value(QLatin1String("address")).toString(),
+                       emails.value(0),
+                       emails,
                        p.value(QLatin1String("jobTitle")).toString(),
                        p.value(QLatin1String("department")).toString()});
     }
@@ -89,6 +97,7 @@ QList<Person> parseDirectory(const QJsonObject &answer)
         people.append({u.value(QLatin1String("id")).toString(),
                        u.value(QLatin1String("displayName")).toString(),
                        email,
+                       email.isEmpty() ? QStringList() : QStringList{email},
                        u.value(QLatin1String("jobTitle")).toString(),
                        u.value(QLatin1String("department")).toString()});
     }

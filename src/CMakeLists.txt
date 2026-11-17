@@ -69,6 +69,8 @@ target_include_directories(graphcore
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lib>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
         $<INSTALL_INTERFACE:${KDE_INSTALL_INCLUDEDIR}/graphcore>
+        # Also <graphcore/...>: apps with a header of the same name (updatecheck.h) pick the core's this way
+        $<INSTALL_INTERFACE:${KDE_INSTALL_INCLUDEDIR}>
 )
 
 target_link_libraries(graphcore

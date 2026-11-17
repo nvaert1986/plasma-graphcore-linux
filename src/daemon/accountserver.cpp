@@ -11,6 +11,8 @@
 #include "signin.h"
 
 #include <KConfigGroup>
+#include <KLocalizedString>
+#include <KNotification>
 #include <KSharedConfig>
 
 #include <QCoreApplication>
@@ -18,10 +20,12 @@
 #include <QDBusConnectionInterface>
 #include <QDir>
 #include <QFutureWatcher>
+#include <QGuiApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QMutex>
+#include <QProcess>
 #include <QThread>
 #include <QUuid>
 #include <QtConcurrentRun>
@@ -234,12 +238,51 @@ void AccountServer::setStatus(const std::shared_ptr<State> &state, const QString
     if (status == QLatin1String("signInNeeded") && !state->announced) {
         state->announced = true;
         Q_EMIT SignInNeeded(state->account.id, problem);
-    } else if (status == QLatin1String("signedIn")) {
+        notifySignInNeeded(state, problem);
+    } else if (status == QLatin1String("signedIn") || status == QLatin1String("signedOut")) {
         state->announced = false;
+        // Signed in again (or signed out on purpose): the notification no longer applies
+        if (const QPointer<KNotification> open = m_notifications.take(state->account.id)) {
+            open->close();
+        }
     }
     if (changed) {
         Q_EMIT AccountsChanged();
     }
+}
+
+void AccountServer::notifySignInNeeded(const std::shared_ptr<State> &state, const QString &problem)
+{
+    // KNotification needs a GUI application; without a display (ssh, tests) the apps' signal is all
+    if (!qobject_cast<QGuiApplication *>(QCoreApplication::instance())) {
+        return;
+    }
+    const Account account = state->account;
+    const QString who = account.userPrincipalName.isEmpty() ? account.displayName : account.userPrincipalName;
+    auto *notification = new KNotification(QStringLiteral("signInNeeded"), KNotification::Persistent);
+    notification->setComponentName(QStringLiteral("plasma-graphcore-linux"));
+    if (problem == QLatin1String("ConsentRequired")) {
+        notification->setTitle(i18nc("@title", "Approval needed"));
+        notification->setText(i18nc("@info %1 an account", "Your organisation's administrator has to approve the Microsoft 365 apps for %1 first. Mail, files and the other apps of the suite wait until then.", who.toHtmlEscaped()));
+        KNotificationAction *details = notification->addAction(i18nc("@action:button", "Show Details"));
+        connect(details, &KNotificationAction::activated, this, [] {
+            QProcess::startDetached(QStringLiteral("systemsettings"), {QStringLiteral("kcm_graphaccounts")});
+        });
+    } else {
+        notification->setTitle(i18nc("@title", "Sign in again"));
+        notification->setText(i18nc("@info %1 an account", "The sign-in of %1 expired. Mail, files and the other apps of the suite wait until you sign in again.", who.toHtmlEscaped()));
+        KNotificationAction *signIn = notification->addAction(i18nc("@action:button", "Sign In"));
+        connect(signIn, &KNotificationAction::activated, this, [this, account] {
+            // The same registration and organisation, the account's address filled in
+            const QString client = account.clientId.isEmpty() ? GraphCore::Accounts::defaultClientId() : account.clientId;
+            startSignIn(GraphCore::SignIn::normalizedId(client), account.tenantId, account.userPrincipalName, false);
+        });
+    }
+    if (const QPointer<KNotification> old = m_notifications.take(account.id)) {
+        old->close();
+    }
+    m_notifications.insert(account.id, notification);
+    notification->sendEvent();
 }
 
 QString AccountServer::Accounts()
@@ -384,8 +427,11 @@ QString AccountServer::SignIn(const QString &clientIdOrSetupText, const QString 
         refuse(QStringLiteral("InvalidArgs"), QStringLiteral("no app registration: give a client ID (none is configured for the suite)"));
         return {};
     }
-    client = GraphCore::SignIn::normalizedId(client);
+    return startSignIn(GraphCore::SignIn::normalizedId(client), tenant, loginHint, deviceCode);
+}
 
+QString AccountServer::startSignIn(const QString &client, const QString &tenant, const QString &loginHint, bool deviceCode)
+{
     const QString request = QUuid::createUuid().toString(QUuid::WithoutBraces);
     auto cancel = std::make_shared<std::atomic_bool>(false);
     m_signIns.insert(request, cancel);

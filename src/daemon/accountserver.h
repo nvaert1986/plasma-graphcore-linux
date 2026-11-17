@@ -8,10 +8,13 @@
 #include <QDBusContext>
 #include <QHash>
 #include <QObject>
+#include <QPointer>
 #include <QString>
 
 #include <atomic>
 #include <memory>
+
+class KNotification;
 
 namespace GraphCore
 {
@@ -65,11 +68,17 @@ private:
     void removeEarlierSignIns(const std::shared_ptr<State> &state);
     void finishSignIn(const QString &request, const QString &clientId, const SignedInUser &user, const QString &organization, bool ok, const QString &error);
     void refuse(const QString &problem, const QString &text);
+    // A sign-in on its own thread (no caller check: SignIn and the notification's action); the request id
+    QString startSignIn(const QString &client, const QString &tenant, const QString &loginHint, bool deviceCode);
+    // One "Sign in again" notification per account for the whole suite (none without a display)
+    void notifySignInNeeded(const std::shared_ptr<State> &state, const QString &problem);
 
     CallerCheck::Allowed m_allowed;
     QHash<QString, bool> m_callers;
     QHash<QString, std::shared_ptr<State>> m_states;
     QHash<QString, std::shared_ptr<std::atomic_bool>> m_signIns;
+    // The open "Sign in again" notifications by account; closed once the account works again
+    QHash<QString, QPointer<KNotification>> m_notifications;
 };
 
 }

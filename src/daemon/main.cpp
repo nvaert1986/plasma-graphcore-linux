@@ -8,13 +8,28 @@
 #include "proxy.h"
 
 #include <QCoreApplication>
+#include <QGuiApplication>
 #include <QUrl>
+
+#include <KLocalizedString>
+
+#include <cstdlib>
+#include <memory>
 
 int main(int argc, char **argv)
 {
-    QCoreApplication app(argc, argv);
-    app.setApplicationName(QStringLiteral("graphaccountsd"));
-    app.setApplicationVersion(QStringLiteral(GRAPHCORE_VERSION));
+    // The "Sign in again" notification needs a GUI application; without a display (ssh, tests) the
+    // service runs without it
+    std::unique_ptr<QCoreApplication> app;
+    if (std::getenv("WAYLAND_DISPLAY") || std::getenv("DISPLAY")) {
+        QGuiApplication::setQuitOnLastWindowClosed(false);
+        app = std::make_unique<QGuiApplication>(argc, argv);
+    } else {
+        app = std::make_unique<QCoreApplication>(argc, argv);
+    }
+    QCoreApplication::setApplicationName(QStringLiteral("graphaccountsd"));
+    QCoreApplication::setApplicationVersion(QStringLiteral(GRAPHCORE_VERSION));
+    KLocalizedString::setApplicationDomain("plasma-graphcore-linux");
     // Sign-ins made here keep their registration under this name in graphaccountsrc
     GraphCore::Accounts::setApplication(GraphCore::AccountServer::keychainService());
     // Sign-ins and token refreshes through the system's proxy (System Settings > Network > Proxy)
@@ -33,6 +48,6 @@ int main(int argc, char **argv)
         qCCritical(GRAPHACCOUNTS).noquote() << error;
         return 1;
     }
-    qCInfo(GRAPHACCOUNTS) << "Account service" << app.applicationVersion() << "ready";
-    return app.exec();
+    qCInfo(GRAPHACCOUNTS) << "Account service" << QCoreApplication::applicationVersion() << "ready";
+    return app->exec();
 }

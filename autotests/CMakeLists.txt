@@ -31,7 +31,7 @@ find_program(DBUS_RUN_SESSION dbus-run-session)
 if(DBUS_RUN_SESSION)
     add_executable(servicetest servicetest.cpp)
     target_link_libraries(servicetest PRIVATE GraphCore::GraphCore Qt6::DBus Qt6::Concurrent Qt6::Network Qt6::Test)
-    target_compile_definitions(servicetest PRIVATE GRAPHACCOUNTSD_TEST="$<TARGET_FILE:graphaccountsd_test>")
+    target_compile_definitions(servicetest PRIVATE GRAPHACCOUNTSD_TEST="$<TARGET_FILE:graphaccountsd_test>" GRAPHCORE_NOTIFYRC="${CMAKE_SOURCE_DIR}/data/plasma-graphcore-linux.notifyrc")
     add_dependencies(servicetest graphaccountsd_test)
     add_test(NAME servicetest
         COMMAND ${DBUS_RUN_SESSION} --config-file=${CMAKE_CURRENT_SOURCE_DIR}/test-session.conf -- $<TARGET_FILE:servicetest>)

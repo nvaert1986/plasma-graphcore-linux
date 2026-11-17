@@ -10,6 +10,9 @@
   app (`GraphResponse::userMessage`, `GraphCore::Errors`), with Dutch translations: the core has its
   own translation catalog now (`plasma-graphcore-linux`).
 - `Connectivity::Watcher`: signals when the network comes back or a connection becomes metered.
+- One "Sign in again" notification per account for the whole suite, from the account service, with
+  a Sign In button (the account's address filled in); "Approval needed" when an administrator has to
+  approve the apps. It closes by itself once the account works again. The apps no longer show their own.
 
 ## 0.13.0 (2026-11-17)
 

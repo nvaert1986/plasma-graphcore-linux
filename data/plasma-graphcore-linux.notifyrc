@@ -1,0 +1,13 @@
+[Global]
+IconName=system-users
+Name=Microsoft 365 Accounts
+Name[nl]=Microsoft 365-accounts
+Comment=The sign-in shared by the Microsoft 365 apps of the suite
+Comment[nl]=De aanmelding die de Microsoft 365-apps van de suite delen
+
+[Event/signInNeeded]
+Name=Sign in again
+Name[nl]=Opnieuw aanmelden
+Comment=An account's sign-in expired or needs an administrator's approval
+Comment[nl]=De aanmelding van een account is verlopen of heeft goedkeuring van een beheerder nodig
+Action=Popup

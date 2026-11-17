@@ -4,7 +4,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: plasma-graphcore-linux\n"
-"PO-Revision-Date: 2026-11-17 13:26+0100\n"
+"PO-Revision-Date: 2026-11-17 13:35+0100\n"
 "Last-Translator: plasma-graphcore-linux contributors\n"
 "Language-Team: Dutch\n"
 "Language: nl\n"
@@ -128,3 +128,27 @@ msgstr "Dit account staat niet meer op deze computer. Voeg het opnieuw toe via S
 msgctxt "@info %1 the technical reason"
 msgid "The account service could not get a sign-in. (%1)"
 msgstr "De accountservice kon geen aanmelding krijgen. (%1)"
+
+msgctxt "@title"
+msgid "Approval needed"
+msgstr "Goedkeuring nodig"
+
+msgctxt "@info %1 an account"
+msgid "Your organisation's administrator has to approve the Microsoft 365 apps for %1 first. Mail, files and the other apps of the suite wait until then."
+msgstr "De beheerder van je organisatie moet de Microsoft 365-apps voor %1 eerst goedkeuren. E-mail, bestanden en de andere apps van de suite wachten tot dan."
+
+msgctxt "@action:button"
+msgid "Show Details"
+msgstr "Details tonen"
+
+msgctxt "@title"
+msgid "Sign in again"
+msgstr "Opnieuw aanmelden"
+
+msgctxt "@info %1 an account"
+msgid "The sign-in of %1 expired. Mail, files and the other apps of the suite wait until you sign in again."
+msgstr "De aanmelding van %1 is verlopen. E-mail, bestanden en de andere apps van de suite wachten tot je je opnieuw aanmeldt."
+
+msgctxt "@action:button"
+msgid "Sign In"
+msgstr "Aanmelden"

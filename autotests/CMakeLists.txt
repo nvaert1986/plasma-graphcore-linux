@@ -7,6 +7,7 @@ ecm_add_tests(
     graphclienttest.cpp
     signintest.cpp
     updatechecktest.cpp
+    proxytest.cpp
     LINK_LIBRARIES GraphCore::GraphCore Qt6::Test
 )
 
@@ -16,7 +17,7 @@ ecm_add_tests(
 )
 
 # Both use QStandardPaths' test mode (the same config file)
-set_tests_properties(accountstest authtest PROPERTIES RESOURCE_LOCK qttest-paths)
+set_tests_properties(accountstest authtest proxytest PROPERTIES RESOURCE_LOCK qttest-paths)
 
 ecm_add_tests(
     callerchecktest.cpp

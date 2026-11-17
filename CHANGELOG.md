@@ -2,6 +2,11 @@
 
 ## 0.14.0 (in development)
 
+**New**
+- The system's proxy (System Settings > Network > Proxy: manual, environment variables, PAC or
+  automatic) for every sign-in and Graph request of the service and the suite's apps
+  (`GraphCore::Proxy::useSystemSettings`).
+
 ## 0.13.0 (2026-11-17)
 
 **Changed**

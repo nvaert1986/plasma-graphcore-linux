@@ -5,6 +5,7 @@
 #include "accountserver.h"
 #include "auth.h"
 #include "graphaccountsd_debug.h"
+#include "proxy.h"
 
 #include <QCoreApplication>
 #include <QUrl>
@@ -16,6 +17,8 @@ int main(int argc, char **argv)
     app.setApplicationVersion(QStringLiteral(GRAPHCORE_VERSION));
     // Sign-ins made here keep their registration under this name in graphaccountsrc
     GraphCore::Accounts::setApplication(GraphCore::AccountServer::keychainService());
+    // Sign-ins and token refreshes through the system's proxy (System Settings > Network > Proxy)
+    GraphCore::Proxy::useSystemSettings();
 
 #ifdef GRAPHACCOUNTS_TEST_HOOKS
     // Tests only (graphaccountsd_test): a loopback login server in place of Microsoft

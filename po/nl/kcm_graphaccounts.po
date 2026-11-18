@@ -4,7 +4,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: kcm_graphaccounts\n"
-"PO-Revision-Date: 2026-11-17 13:42+0100\n"
+"PO-Revision-Date: 2026-11-18 15:46+0100\n"
 "Last-Translator: plasma-graphcore-linux contributors\n"
 "Language-Team: Dutch\n"
 "Language: nl\n"
@@ -30,8 +30,20 @@ msgid "Signed out"
 msgstr "Afgemeld"
 
 msgctxt "@info"
+msgid "No keychain is available to keep the sign-in. Turn on KDE Wallet (System Settings > KDE Wallet > Enable the KDE wallet subsystem), or install another Secret Service provider such as gnome-keyring or KeePassXC, then sign in again."
+msgstr "Er is geen sleutelbos beschikbaar om de aanmelding te bewaren. Schakel KDE Portefeuille in (Systeeminstellingen > KDE Portefeuille > Het KDE-portefeuillesubsysteem inschakelen), of installeer een andere Secret Service-provider zoals gnome-keyring of KeePassXC, en meld je daarna opnieuw aan."
+
+msgctxt "@info"
 msgid "Enter your work e-mail address."
 msgstr "Voer je zakelijke e-mailadres in."
+
+msgctxt "@info"
+msgid "Enter the Client ID of your organisation's app registration. Your IT administrator has it."
+msgstr "Voer de client-ID van de app-registratie van je organisatie in. Je IT-beheerder heeft die."
+
+msgctxt "@info"
+msgid "The account service (graphaccountsd) could not be started. Reinstall plasma-graphcore-linux, or log out and back in."
+msgstr "De accountservice (graphaccountsd) kon niet worden gestart. Installeer plasma-graphcore-linux opnieuw, of meld je af bij het bureaublad en weer aan."
 
 msgctxt "@info"
 msgid "Your organisation has not approved the Microsoft 365 apps of this suite yet. An administrator of the organisation opens the approval page once, signs in and accepts; then sign in again here."
@@ -123,6 +135,9 @@ msgstr "Deze organisatie heeft een eigen app-registratie"
 
 msgid "Client ID:"
 msgstr "Client-ID:"
+
+msgid "The first account on this computer needs the Client ID of your organisation's app registration (or the setup text). Your IT administrator has it; the other apps of the suite use it too."
+msgstr "Het eerste account op deze computer heeft de client-ID van de app-registratie van je organisatie nodig (of de installatietekst). Je IT-beheerder heeft die; de andere apps van de suite gebruiken hem ook."
 
 msgid "The client ID of the app registration in that organization (or the setup text), from its IT administrator."
 msgstr "De client-ID van de app-registratie in die organisatie (of de installatietekst), van de IT-beheerder daar."

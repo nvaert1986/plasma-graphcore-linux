@@ -236,8 +236,13 @@ KCMUtils.ScrollViewKCM {
             open();
             emailField.forceActiveFocus();
         }
+        // No registration on this computer yet (the first account): the Client ID field is shown by
+        // itself and required; otherwise only behind the checkbox (another organisation's own)
+        readonly property bool askRegistration: !kcm.registrationKnown || ownRegistration.checked
+        readonly property bool canStart: emailField.text.trim().length > 0 && (kcm.registrationKnown || clientField.text.trim().length > 0)
+
         function start(withCode) {
-            kcm.addAccount(emailField.text, ownRegistration.checked ? clientField.text : "", withCode);
+            kcm.addAccount(emailField.text, addDialog.askRegistration ? clientField.text : "", withCode);
         }
 
         onRejected: kcm.cancelSignIn()
@@ -289,12 +294,13 @@ KCMUtils.ScrollViewKCM {
                 }
                 QQC2.CheckBox {
                     id: ownRegistration
+                    visible: kcm.registrationKnown
                     text: i18n("This organization has its own app registration")
                 }
                 QQC2.TextField {
                     id: clientField
                     Kirigami.FormData.label: i18n("Client ID:")
-                    visible: ownRegistration.checked
+                    visible: addDialog.askRegistration
                     Layout.preferredWidth: Kirigami.Units.gridUnit * 16
                     placeholderText: "00000000-0000-0000-0000-000000000000"
                     font.family: "monospace"
@@ -304,7 +310,9 @@ KCMUtils.ScrollViewKCM {
                     wrapMode: Text.Wrap
                     font: Kirigami.Theme.smallFont
                     color: Kirigami.Theme.disabledTextColor
-                    text: ownRegistration.checked
+                    text: !kcm.registrationKnown
+                        ? i18n("The first account on this computer needs the Client ID of your organisation's app registration (or the setup text). Your IT administrator has it; the other apps of the suite use it too.")
+                        : ownRegistration.checked
                         ? i18n("The client ID of the app registration in that organization (or the setup text), from its IT administrator.")
                         : i18n("Signs in with the same app registration as your other accounts. Its organization must have approved it.")
                 }
@@ -350,14 +358,14 @@ KCMUtils.ScrollViewKCM {
                 Layout.alignment: Qt.AlignRight
                 QQC2.Button {
                     visible: !kcm.busy
-                    enabled: emailField.text.trim().length > 0
+                    enabled: addDialog.canStart
                     icon.name: "im-user-online"
                     text: i18n("Sign In")
                     onClicked: addDialog.start(false)
                 }
                 QQC2.Button {
                     visible: !kcm.busy && kcm.browserSignIn
-                    enabled: emailField.text.trim().length > 0
+                    enabled: addDialog.canStart
                     icon.name: "dialog-password"
                     text: i18n("Sign In with a Code")
                     onClicked: addDialog.start(true)

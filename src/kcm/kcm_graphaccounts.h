@@ -33,6 +33,8 @@ class KcmGraphAccounts : public KQuickConfigModule
     Q_PROPERTY(QString signedInAs READ signedInAs NOTIFY signInChanged)
     // Builds without the browser sign-in (Qt before 6.9) sign in with a code only
     Q_PROPERTY(bool browserSignIn READ browserSignIn CONSTANT)
+    // An app registration (client ID) is configured for the suite; without one, Add Account asks for it
+    Q_PROPERTY(bool registrationKnown READ registrationKnown NOTIFY accountsChanged)
 
 public:
     KcmGraphAccounts(QObject *parent, const KPluginMetaData &data);
@@ -47,6 +49,7 @@ public:
     QString adminConsentLink() const;
     QString signedInAs() const;
     bool browserSignIn() const;
+    bool registrationKnown() const;
 
     // A new account: the work address (organisation and login hint), optionally the organisation's
     // own registration (client ID or IT's setup text)

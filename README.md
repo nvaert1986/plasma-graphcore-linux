@@ -45,8 +45,16 @@ Debian 13 (`libgraphcore0.14`, `plasma-graphcore-linux`, `libgraphcore-dev` for 
 Fedora (`plasma-graphcore-linux`, `-devel`) and Arch Linux (`plasma-graphcore-linux`). The apps'
 packages need them: install them together, for example on Debian 13 (as root)
 `apt install ./libgraphcore0.14_<version>-1_amd64.deb ./plasma-graphcore-linux_<version>-1_amd64.deb ./plasma-graphsync-linux_<version>-1_amd64.deb`.
-They are built and install-tested in clean containers (not on a real desktop); the packaging files
-are in [packaging/](packaging/).
+They are built and install-tested in clean containers; the packaging files are in
+[packaging/](packaging/).
+
+Good to know:
+- The sign-in is kept in the system keychain: **KDE Wallet must be switched on** (System Settings >
+  KDE Wallet), or another Secret Service provider (gnome-keyring, KeePassXC) must run.
+- The first account on a computer needs the **Client ID** of the organisation's app registration
+  (from IT); Add Account asks for it, and it is kept for the next accounts and apps.
+- **Debian 13** has Qt 6.8: only the sign-in with a code works there (the browser sign-in needs Qt 6.9).
+- **Arch**: update first (`pacman -Syu`), then install the packages.
 
 ## Building
 

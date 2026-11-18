@@ -542,6 +542,12 @@ void AccountServer::finishSignIn(const QString &request, const QString &clientId
         account.organization = GraphCore::Accounts::findUser(user.tenantId, user.objectId).organization;
     }
     const Account stored = GraphCore::Accounts::add(account);
+    // The first sign-in on this computer with an organisation's registration: from now on the suite's
+    // default, so the next account and the other apps do not ask for it again (0.14.1)
+    if (GraphCore::Accounts::defaultClientId().isEmpty() && !clientId.isEmpty()) {
+        GraphCore::Accounts::setDefaultClientId(clientId);
+        qCInfo(GRAPHACCOUNTS) << "Stored the app registration of the first sign-in as the suite's default";
+    }
     // A fresh state reads the new sign-in
     m_states.remove(stored.id);
     if (const std::shared_ptr<State> state = stateFor(stored.id)) {

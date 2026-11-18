@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.14.1 (2026-11-18)
+
+**Fixed**
+- Add Account asks for the Client ID by itself when this computer has no app registration yet (the
+  first account), and the service keeps it as the suite's default after that sign-in, so other
+  accounts and apps do not ask again. Before, the field was hidden behind a checkbox and the sign-in
+  failed with "no app registration".
+- A sign-in that worked in the browser but could not be stored because no keychain answers (KDE Wallet
+  switched off, no Secret Service) now says so and what to do, instead of "The name is not
+  activatable". The same for an account service that cannot be started.
+- README: the sign-in needs KDE Wallet switched on (or another Secret Service); on Debian 13 (Qt 6.8)
+  only the sign-in with a code works.
+
 ## 0.14.0 (2026-11-17)
 
 **New**

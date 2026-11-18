@@ -416,6 +416,13 @@ private Q_SLOTS:
         // Microsoft said yes, but the sign-in cannot be stored on this bus: it must not count
         QVERIFY(finished.at(0).at(1).toString().isEmpty());
         QVERIFY(!finished.at(0).at(2).toString().isEmpty());
+        // No keychain answers on this bus, as with KDE Wallet switched off: the error must be one the System
+        // Settings page recognises as such (kcm_graphaccounts.cpp isKeychainError), so people get told what to do
+        const QString stored = finished.at(0).at(2).toString();
+        qInfo().noquote() << "keychain error:" << stored;
+        QVERIFY2(stored.contains(QLatin1String("not activatable"), Qt::CaseInsensitive) || stored.contains(QLatin1String("org.freedesktop.secrets"))
+                     || stored.contains(QLatin1String("kwallet"), Qt::CaseInsensitive) || stored.contains(QLatin1String("secret service"), Qt::CaseInsensitive),
+                 qPrintable(stored));
         QCOMPARE(accounts.accounts().size(), 5);
     }
 

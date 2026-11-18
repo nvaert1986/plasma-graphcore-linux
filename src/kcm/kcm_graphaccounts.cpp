@@ -42,6 +42,19 @@ QString stateText(const QString &state)
     return {};
 }
 
+// The service's technical errors in words people can act on (0.14.1). A sign-in that worked in the
+// browser and could not be stored: no keychain answered (KDE Wallet switched off, no Secret Service)
+bool isKeychainError(const QString &error)
+{
+    return error.contains(QLatin1String("not activatable"), Qt::CaseInsensitive) || error.contains(QLatin1String("org.freedesktop.secrets"))
+        || error.contains(QLatin1String("kwallet"), Qt::CaseInsensitive) || error.contains(QLatin1String("secret service"), Qt::CaseInsensitive);
+}
+
+QString keychainMessage()
+{
+    return i18nc("@info", "No keychain is available to keep the sign-in. Turn on KDE Wallet (System Settings > KDE Wallet > Enable the KDE wallet subsystem), or install another Secret Service provider such as gnome-keyring or KeePassXC, then sign in again.");
+}
+
 // The organisation part of a work address (the service also takes the whole address)
 QString domainOf(const QString &email)
 {
@@ -145,11 +158,23 @@ bool KcmGraphAccounts::browserSignIn() const
     return GraphCore::SignIn::browserLoginAvailable();
 }
 
+bool KcmGraphAccounts::registrationKnown() const
+{
+    return !GraphCore::Accounts::defaultClientId().isEmpty();
+}
+
 bool KcmGraphAccounts::addAccount(const QString &email, const QString &registration, bool withCode)
 {
     const QString address = email.trimmed();
     if (!address.contains(QLatin1Char('@'))) {
         m_lastError = i18nc("@info", "Enter your work e-mail address.");
+        Q_EMIT signInChanged();
+        return false;
+    }
+    // The first account on this computer: the organisation's app registration is needed once; the
+    // service keeps it as the suite's default after the sign-in
+    if (registration.trimmed().isEmpty() && !registrationKnown()) {
+        m_lastError = i18nc("@info", "Enter the Client ID of your organisation's app registration. Your IT administrator has it.");
         Q_EMIT signInChanged();
         return false;
     }
@@ -177,7 +202,14 @@ bool KcmGraphAccounts::start(const QString &registration, const QString &tenant,
     QString error;
     const QString request = m_client->signIn(registration, tenant, hint, withCode || !browserSignIn(), &error);
     if (request.isEmpty()) {
-        m_lastError = error.isEmpty() ? GraphCore::Errors::problemMessage(QStringLiteral("Other")) : error;
+        if (error.contains(QLatin1String("not activatable"), Qt::CaseInsensitive) || error.contains(QLatin1String("ServiceUnknown"))) {
+            // The service itself could not be started
+            m_lastError = i18nc("@info", "The account service (graphaccountsd) could not be started. Reinstall plasma-graphcore-linux, or log out and back in.");
+        } else if (error.contains(QLatin1String("no app registration"))) {
+            m_lastError = i18nc("@info", "Enter the Client ID of your organisation's app registration. Your IT administrator has it.");
+        } else {
+            m_lastError = error.isEmpty() ? GraphCore::Errors::problemMessage(QStringLiteral("Other")) : error;
+        }
         Q_EMIT signInChanged();
         return false;
     }
@@ -205,6 +237,8 @@ void KcmGraphAccounts::finished(const QString &request, const QString &account, 
         m_adminConsentLink = GraphCore::SignIn::adminConsentUrl(m_requestTenant, m_requestClient).toString();
     } else if (error.contains(QLatin1String("cancel"), Qt::CaseInsensitive)) {
         m_lastError.clear();
+    } else if (isKeychainError(error)) {
+        m_lastError = keychainMessage();
     } else if (error.startsWith(QLatin1String("no organisation found"))) {
         m_lastError = i18nc("@info", "No Microsoft 365 organisation uses this address. Check the address.");
     } else if (error.startsWith(QLatin1String("no connection"))) {

@@ -3,8 +3,8 @@
 # Maintainer: nvaert1986 <25772781+nvaert1986@users.noreply.github.com>
 
 pkgname=plasma-graphcore-linux
-pkgver=0.14.0
-pkgrel=2
+pkgver=0.14.1
+pkgrel=1
 pkgdesc='Account service and shared core of the Microsoft 365 apps for KDE Plasma'
 arch=(x86_64)
 url='https://github.com/nvaert1986/plasma-graphcore-linux'
@@ -17,8 +17,7 @@ makedepends=(cmake extra-cmake-modules)
 optdepends=('kwallet: keeps the sign-in (or another Secret Service provider)'
             'systemsettings: System Settings > Microsoft 365 Accounts')
 options=(!debug)
-# Says to log out and back in once: Arch's session bus (dbus-broker) only reads new D-Bus services
-# (graphaccountsd) when a session starts
+# Says that the sign-in needs a keychain (KDE Wallet switched on, or another Secret Service)
 install=$pkgname.install
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
 sha256sums=('SKIP')  # set from the tag tarball at release

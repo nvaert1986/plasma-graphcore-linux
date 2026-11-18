@@ -74,6 +74,9 @@ int login(const QString &client, const QString &tenant, const QString &hint, boo
         }
         if (account.isEmpty()) {
             err() << "graphaccountsctl: sign-in failed: " << error << Qt::endl;
+            if (error.contains(QLatin1String("not activatable"), Qt::CaseInsensitive) || error.contains(QLatin1String("org.freedesktop.secrets"))) {
+                err() << "graphaccountsctl: no keychain answered: turn on KDE Wallet, or install another Secret Service provider (gnome-keyring, KeePassXC)" << Qt::endl;
+            }
         } else {
             out() << "Signed in: account " << account << Qt::endl;
             result = 0;

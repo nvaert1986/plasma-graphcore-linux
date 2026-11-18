@@ -4,8 +4,8 @@
 # (with plasma-graphcore-linux-<version>.tar.gz next to it)
 
 Name:           plasma-graphcore-linux
-Version:        0.14.0
-Release:        2%{?dist}
+Version:        0.14.1
+Release:        1%{?dist}
 Summary:        Account service and shared core of the Microsoft 365 apps for KDE Plasma
 License:        GPL-3.0-or-later
 URL:            https://github.com/nvaert1986/plasma-graphcore-linux
@@ -98,6 +98,10 @@ Headers and the CMake package GraphCore, for building the apps of the suite.
 %{_libdir}/cmake/GraphCore/
 
 %changelog
+* Wed Nov 18 2026 nvaert1986 <25772781+nvaert1986@users.noreply.github.com> - 0.14.1-1
+- Add Account asks for the Client ID when none is configured; clear messages when no keychain
+  answers or the account service cannot be started
+
 * Wed Nov 18 2026 nvaert1986 <25772781+nvaert1986@users.noreply.github.com> - 0.14.0-2
 - Require at least the Qt and KDE library versions the package was built against: on a
   system that was not updated first it failed with "undefined symbol"

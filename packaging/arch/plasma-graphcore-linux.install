@@ -2,6 +2,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 post_install() {
-  echo ">>> Log out and back in once before signing in: the session bus only learns about the"
-  echo "    account service (graphaccountsd, used by Graph Sync and Graph Mail) when a session starts."
+  echo ">>> The sign-in of the Microsoft 365 apps is kept in the keychain: KDE Wallet must be switched on"
+  echo "    (System Settings > KDE Wallet), or another Secret Service provider (gnome-keyring, KeePassXC)."
 }

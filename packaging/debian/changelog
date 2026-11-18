@@ -1,3 +1,11 @@
+plasma-graphcore-linux (0.14.1-1) unstable; urgency=medium
+
+  * Add Account asks for the Client ID when none is configured; clear
+    messages when no keychain answers or the account service cannot be
+    started. More in CHANGELOG.md.
+
+ -- nvaert1986 <25772781+nvaert1986@users.noreply.github.com>  Wed, 18 Nov 2026 16:30:00 +0100
+
 plasma-graphcore-linux (0.14.0-1) unstable; urgency=medium
 
   * First packaged release: the account service, System Settings >

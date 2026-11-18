@@ -18,6 +18,8 @@ private Q_SLOTS:
         const CallerCheck::Allowed allowed = CallerCheck::allowedFor({QStringLiteral("/usr/bin"), QStringLiteral("/home/someone/.local/bin/")}, {});
         QVERIFY(CallerCheck::isAllowed(QStringLiteral("/usr/bin/graphmaild"), allowed));
         QVERIFY(CallerCheck::isAllowed(QStringLiteral("/usr/bin/graphsyncd"), allowed));
+        QVERIFY(CallerCheck::isAllowed(QStringLiteral("/usr/bin/graphchatd"), allowed));
+        QVERIFY(!CallerCheck::isAllowed(QStringLiteral("/usr/bin/graphchat-call"), allowed));
         QVERIFY(CallerCheck::isAllowed(QStringLiteral("/home/someone/.local/bin/plasma-graphmail-linux"), allowed));
         // Other programs, also in the same directories
         QVERIFY(!CallerCheck::isAllowed(QStringLiteral("/usr/bin/dbus-send"), allowed));

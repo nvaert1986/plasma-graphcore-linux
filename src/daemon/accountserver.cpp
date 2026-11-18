@@ -81,11 +81,12 @@ struct TokenResult {
 
 struct AccountServer::State {
     Account account;
-    // One sign-in (refresh token, one keychain entry) for both permission sets: "directory" has
-    // admin-consent permissions and its own access token, so a tenant without that consent keeps
-    // its "suite" token
+    // One sign-in (refresh token, one keychain entry) for every permission set: "directory" and
+    // "chat" have admin-consent permissions and their own access tokens, so a tenant without that
+    // consent keeps its "suite" token
     std::shared_ptr<Auth> suite;
     std::shared_ptr<Auth> directory;
+    std::shared_ptr<Auth> chat;
     // The apps' stored sign-ins of this account with the same registration: (service, key)
     QList<QPair<QString, QString>> earlier;
     QMutex migrationMutex;
@@ -201,6 +202,7 @@ std::shared_ptr<AccountServer::State> AccountServer::stateFor(const QString &id)
     state->account = account;
     state->suite = std::make_shared<Auth>(Auth::settingsFor(account, keychainService(), Scopes::suite()));
     state->directory = std::make_shared<Auth>(Auth::settingsFor(account, keychainService(), Scopes::directory()));
+    state->chat = std::make_shared<Auth>(Auth::settingsFor(account, keychainService(), Scopes::chat()));
     const QString client = account.effectiveClientId();
     for (const QString &app : earlierApps()) {
         // Only a sign-in with this registration can be used here
@@ -212,6 +214,7 @@ std::shared_ptr<AccountServer::State> AccountServer::stateFor(const QString &id)
     if (const QString token = testRefreshTokens().value(id); !token.isEmpty()) {
         state->suite->setRefreshTokenForTesting(token);
         state->directory->setRefreshTokenForTesting(token);
+        state->chat->setRefreshTokenForTesting(token);
     }
 #endif
     m_states.insert(id, state);
@@ -356,7 +359,7 @@ QString AccountServer::AccessToken(const QString &account, const QString &scopeS
     if (!callerAllowed(true)) {
         return {};
     }
-    if (scopeSet != GraphCore::AccountService::suite() && scopeSet != GraphCore::AccountService::directory()) {
+    if (scopeSet != GraphCore::AccountService::suite() && scopeSet != GraphCore::AccountService::directory() && scopeSet != GraphCore::AccountService::chat()) {
         refuse(QStringLiteral("InvalidArgs"), QStringLiteral("unknown permission set: %1").arg(scopeSet));
         return {};
     }
@@ -368,7 +371,9 @@ QString AccountServer::AccessToken(const QString &account, const QString &scopeS
     setDelayedReply(true);
     const QDBusMessage request = message();
     QDBusConnection bus = connection();
-    const std::shared_ptr<Auth> auth = scopeSet == GraphCore::AccountService::directory() ? state->directory : state->suite;
+    const std::shared_ptr<Auth> auth = scopeSet == GraphCore::AccountService::directory() ? state->directory
+        : scopeSet == GraphCore::AccountService::chat()                                    ? state->chat
+                                                                                           : state->suite;
     const QString target = keychainService();
     const QString ownKey = Auth::keychainKeyFor(state->account.tenantId, state->account.effectiveClientId(), state->account.objectId);
 
@@ -388,8 +393,8 @@ QString AccountServer::AccessToken(const QString &account, const QString &scopeS
         }
         const QString problem = problemName(result.problem);
         bus.send(request.createErrorReply(GraphCore::AccountService::errorName(problem), result.error));
-        // Missing consent for the directory permissions alone says nothing about the sign-in
-        if (scopeSet == GraphCore::AccountService::directory() && result.problem == Auth::Problem::ConsentRequired) {
+        // Missing consent for the directory or Teams permissions alone says nothing about the sign-in
+        if (scopeSet != GraphCore::AccountService::suite() && result.problem == Auth::Problem::ConsentRequired) {
             return;
         }
         switch (result.problem) {
@@ -588,6 +593,7 @@ void AccountServer::SignOut(const QString &account)
     watcher->setFuture(QtConcurrent::run([state] {
         state->suite->logout();
         state->directory->logout();
+        state->chat->logout();
         // The apps' own stored sign-ins too: else the next request would take one over again
         QMutexLocker locker(&state->migrationMutex);
         for (const auto &[service, key] : std::as_const(state->earlier)) {

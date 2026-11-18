@@ -138,7 +138,8 @@ private Q_SLOTS:
         QFile rc(dir.filePath(QStringLiteral("config/graphaccountsrc")));
         QVERIFY(rc.open(QIODevice::WriteOnly));
         // a1 signed in, a2 never here (its keychain cannot be read on this bus), a3 expired, a4 needs
-        // an administrator's approval, a5 signed in without a stored organisation name
+        // an administrator's approval, a5 signed in without a stored organisation name and without
+        // approval of the Teams permissions
         QString text = QStringLiteral("[Registration]\nClientId=%1\n\n").arg(client);
         for (int n = 1; n <= 5; ++n) {
             text += QStringLiteral("[Account a%1]\nTenantId=%2\nObjectId=%3\nUserPrincipalName=user%1@example.com\nDisplayName=User %1\n%4\n")
@@ -175,6 +176,10 @@ private Q_SLOTS:
                 return loginError("invalid_grant", "AADSTS65001: The user or administrator has not consented to use the application.");
             }
             const QString refresh = form.queryItemValue(QStringLiteral("refresh_token"));
+            // a5's organisation has not approved the Teams permissions
+            if (refresh == QLatin1String("rt-nochat") && form.queryItemValue(QStringLiteral("scope"), QUrl::FullyDecoded).contains(QLatin1String("Chat.ReadWrite"))) {
+                return loginError("invalid_grant", "AADSTS65001: The user or administrator has not consented to use the application.");
+            }
             if (refresh == QLatin1String("rt-consent")) {
                 return loginError("invalid_grant", "AADSTS65001: The user or administrator has not consented to use the application.");
             }
@@ -199,7 +204,7 @@ private Q_SLOTS:
         env.insert(QStringLiteral("XDG_DATA_HOME"), dir.filePath(QStringLiteral("data")));
         env.insert(QStringLiteral("XDG_STATE_HOME"), dir.filePath(QStringLiteral("state")));
         env.insert(QStringLiteral("GRAPHACCOUNTS_TEST_LOGIN_SERVER"), QStringLiteral("http://127.0.0.1:%1").arg(login->port()));
-        env.insert(QStringLiteral("GRAPHACCOUNTS_TEST_REFRESH_TOKENS"), QStringLiteral("a1=rt-good,a3=rt-expired,a4=rt-consent,a5=rt-good"));
+        env.insert(QStringLiteral("GRAPHACCOUNTS_TEST_REFRESH_TOKENS"), QStringLiteral("a1=rt-good,a3=rt-expired,a4=rt-consent,a5=rt-nochat"));
         env.insert(QStringLiteral("GRAPHACCOUNTS_TEST_GRAPH_SERVER"), QStringLiteral("http://127.0.0.1:%1/v1.0").arg(login->port()));
         // A "display" so the service is a GUI application (notifications); offscreen, nothing appears
         env.remove(QStringLiteral("DISPLAY"));
@@ -355,6 +360,43 @@ private Q_SLOTS:
         QVERIFY(rc.readAll().contains("Organization=Example Organisation"));
     }
 
+    void chatTokenForASignedInAccount()
+    {
+        // Graph Chat's set: its own token, asked for with the Teams permissions
+        ServiceTokenProvider tokens(QStringLiteral("a1"), AccountService::chat());
+        QString error;
+        QCOMPARE(meanwhile([&] {
+                     return tokens.accessToken(&error);
+                 }),
+                 QStringLiteral("at-rt-good"));
+        const QUrlQuery form(QString::fromUtf8(login->requests.last().body));
+        const QString scope = form.queryItemValue(QStringLiteral("scope"), QUrl::FullyDecoded);
+        QVERIFY2(scope.contains(QLatin1String("Chat.ReadWrite")) && scope.contains(QLatin1String("Presence.Read.All")), qPrintable(scope));
+        QVERIFY(!scope.contains(QLatin1String("Mail.ReadWrite")));
+    }
+
+    void chatWithoutConsentLeavesTheSignIn()
+    {
+        // An organisation that has not approved the Teams permissions: Graph Chat hears
+        // ConsentRequired, the account stays signed in for the other apps and nobody is asked to
+        // sign in again
+        ServiceTokenProvider suiteTokens(QStringLiteral("a5"));
+        QString error;
+        QVERIFY(!meanwhile([&] {
+                     return suiteTokens.accessToken(&error);
+                 }).isEmpty());
+        AccountsClient accounts;
+        QSignalSpy needed(&accounts, &AccountsClient::signInNeeded);
+        ServiceTokenProvider tokens(QStringLiteral("a5"), AccountService::chat());
+        QVERIFY(meanwhile([&] {
+                    return tokens.accessToken(&error);
+                }).isEmpty());
+        QCOMPARE(tokens.lastProblem(), QStringLiteral("ConsentRequired"));
+        QTest::qWait(200);
+        QVERIFY(needed.isEmpty());
+        QCOMPARE(stateOf(QStringLiteral("a5")), QStringLiteral("signedIn"));
+    }
+
     void unreadableKeychainIsNotASignOut()
     {
         // a2 has no sign-in in memory and the keychain cannot be read on this bus: that must say
@@ -443,6 +485,11 @@ private Q_SLOTS:
                 }).isEmpty());
         // NotSignedIn on a real session; this bus has no keychain to look in, so the reason may differ
         QVERIFY(!held.lastProblem().isEmpty());
+        // Graph Chat's own token of the account is gone too
+        ServiceTokenProvider chat(QStringLiteral("a1"), AccountService::chat());
+        QVERIFY(meanwhile([&] {
+                    return chat.accessToken(&error);
+                }).isEmpty());
         QVERIFY(!accounts.signOut(QStringLiteral("no-such-account"), &error));
     }
 };

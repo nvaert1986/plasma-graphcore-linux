@@ -44,9 +44,9 @@ int list()
     return 0;
 }
 
-int check(const QString &account, bool directory)
+int check(const QString &account, const QString &scopeSet)
 {
-    ServiceTokenProvider tokens(account, directory ? AccountService::directory() : AccountService::suite());
+    ServiceTokenProvider tokens(account, scopeSet);
     QString error;
     if (tokens.accessToken(&error).isEmpty()) {
         const QString problem = tokens.lastProblem();
@@ -123,6 +123,7 @@ int main(int argc, char **argv)
         {QStringLiteral("tenant"), QStringLiteral("login: the organisation (tenant ID, domain or work e-mail address)"), QStringLiteral("tenant")},
         {QStringLiteral("hint"), QStringLiteral("login: the work e-mail address to suggest"), QStringLiteral("address")},
         {QStringLiteral("directory"), QStringLiteral("check: the directory permissions (needs an administrator's consent)")},
+        {QStringLiteral("chat"), QStringLiteral("check: Graph Chat's Teams permissions (needs an administrator's consent)")},
     });
     parser.process(app);
     const QStringList args = parser.positionalArguments();
@@ -137,7 +138,10 @@ int main(int argc, char **argv)
         return logout(args.at(1));
     }
     if (command == QLatin1String("check") && args.size() == 2) {
-        return check(args.at(1), parser.isSet(QStringLiteral("directory")));
+        const QString scopeSet = parser.isSet(QStringLiteral("directory")) ? AccountService::directory()
+            : parser.isSet(QStringLiteral("chat"))                         ? AccountService::chat()
+                                                                           : AccountService::suite();
+        return check(args.at(1), scopeSet);
     }
     parser.showHelp(2);
 }

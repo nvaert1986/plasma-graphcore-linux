@@ -43,7 +43,7 @@ public:
 public Q_SLOTS:
     // JSON list: id, tenantId, objectId, userPrincipalName, displayName, organization, state
     Q_SCRIPTABLE QString Accounts();
-    // An access token for a permission set ("suite", "directory") and when it expires (ms since
+    // An access token for a permission set ("suite", "directory", "chat") and when it expires (ms since
     // the epoch, UTC). forceRefresh after a 401 from Graph. Errors: see GraphCore::AccountService::errorName
     Q_SCRIPTABLE QString AccessToken(const QString &account, const QString &scopeSet, bool forceRefresh, qlonglong &expiresAtMs);
     // Starts a sign-in; returns its request id. SignInProgress (device code) and SignInFinished follow

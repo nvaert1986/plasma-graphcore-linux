@@ -35,6 +35,11 @@ inline QString directory()
 {
     return QStringLiteral("directory");
 }
+// Graph Chat (Teams through Graph); needs the organisation's approval of the Teams permissions
+inline QString chat()
+{
+    return QStringLiteral("chat");
+}
 // Opens System Settings > Microsoft 365 Accounts (kcm_graphaccounts), where every app of the suite
 // sends people to add an account or sign in again; false when neither System Settings nor
 // kcmshell6 could be started

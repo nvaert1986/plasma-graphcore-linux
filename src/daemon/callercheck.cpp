@@ -23,6 +23,10 @@ QStringList programNames()
         QStringLiteral("graphsyncd"),
         QStringLiteral("graphsyncctl"),
         QStringLiteral("plasma-graphsync-linux"),
+        // Graph Chat (its call window needs no token)
+        QStringLiteral("graphchatd"),
+        QStringLiteral("graphchatctl"),
+        QStringLiteral("plasma-graphchat-linux"),
     };
 }
 

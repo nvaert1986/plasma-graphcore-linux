@@ -6,7 +6,8 @@
 #include <QStringList>
 
 // Delegated Microsoft Graph permissions. Every app of the suite signs in with suite(), so one
-// admin consent per tenant covers the mail client and the sync client together.
+// admin consent per tenant covers the mail client and the sync client together; Graph Chat also
+// asks for chat() (its own token from the same sign-in).
 namespace GraphCore::Scopes
 {
 
@@ -56,6 +57,36 @@ inline QStringList tasks()
 inline QStringList directory()
 {
     return signIn() + QStringList{QStringLiteral("User.Read.All")};
+}
+
+// Teams through Graph (Graph Chat): chats, channels, presence, meetings and their artifacts,
+// approvals. Several need an administrator's consent
+inline QStringList teams()
+{
+    return {QStringLiteral("Chat.ReadWrite"),
+            QStringLiteral("ChatMessage.Send"),
+            QStringLiteral("ChannelMessage.Send"),
+            QStringLiteral("ChannelMessage.Read.All"),
+            QStringLiteral("ChannelMessage.ReadWrite"),
+            QStringLiteral("Team.ReadBasic.All"),
+            QStringLiteral("Channel.ReadBasic.All"),
+            QStringLiteral("TeamMember.Read.All"),
+            QStringLiteral("ChannelMember.Read.All"),
+            QStringLiteral("Presence.Read.All"),
+            QStringLiteral("Presence.ReadWrite"),
+            QStringLiteral("OnlineMeetings.ReadWrite"),
+            QStringLiteral("OnlineMeetingArtifact.Read.All"),
+            QStringLiteral("OnlineMeetingTranscript.Read.All"),
+            QStringLiteral("OnlineMeetingRecording.Read.All"),
+            QStringLiteral("ApprovalSolution.ReadWrite")};
+}
+
+// Asked for on its own, never at sign-in, like directory(): a tenant that has not approved the
+// Teams permissions keeps its suite token. What Graph Chat uses: Teams, files for attachments,
+// the calendar for meetings, people search
+inline QStringList chat()
+{
+    return signIn() + teams() + files() + QStringList{QStringLiteral("Calendars.ReadWrite"), QStringLiteral("People.Read"), QStringLiteral("User.ReadBasic.All")};
 }
 
 inline QStringList suite()

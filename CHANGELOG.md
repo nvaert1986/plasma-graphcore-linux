@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.15.0 (in development)
+
+**New**
+- Permission set `chat` for Graph Chat (Teams through Graph: chats, channels, presence, meetings
+  and their artifacts, approvals), with its own token from the same sign-in. An organisation that
+  has not approved the Teams permissions gets `ConsentRequired` for this set only: the account
+  stays signed in for the other apps and nobody is asked to sign in again.
+- Graph Chat's programs (`graphchatd`, `graphchatctl`, `plasma-graphchat-linux`) may use the
+  account service.
+- `graphaccountsctl check --chat <account>`.
+
 ## 0.14.0 (2026-11-17)
 
 **New**

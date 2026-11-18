@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: 2026 plasma-graphcore-linux contributors
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+post_install() {
+  echo ">>> Log out and back in once before signing in: the session bus only learns about the"
+  echo "    account service (graphaccountsd, used by Graph Sync and Graph Mail) when a session starts."
+}

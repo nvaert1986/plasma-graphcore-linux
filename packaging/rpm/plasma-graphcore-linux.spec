@@ -5,7 +5,7 @@
 
 Name:           plasma-graphcore-linux
 Version:        0.14.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Account service and shared core of the Microsoft 365 apps for KDE Plasma
 License:        GPL-3.0-or-later
 URL:            https://github.com/nvaert1986/plasma-graphcore-linux
@@ -37,6 +37,19 @@ Requires:       qt6-qtdeclarative
 # The keychain (Secret Service) that holds the sign-in, and System Settings for the accounts page
 Recommends:     kf6-kwallet
 Recommends:     plasma-systemsettings
+
+
+# Built against the versions installed now, so they become the minimum: a system that was not
+# updated first (dnf install ./file.rpm keeps what is "good enough") otherwise fails at run time with
+# "undefined symbol" (0.14.0-1)
+%{lua:
+for name in ("qt6-qtbase qt6-qtdeclarative qt6-qtnetworkauth qtkeychain-qt6 kf6-kconfig kf6-kcoreaddons kf6-ki18n kf6-kcmutils kf6-knotifications"):gmatch("%S+") do
+  local v = rpm.expand("%(rpm -q --qf '%%{version}' " .. name .. " 2>/dev/null)")
+  if v ~= "" and not v:find("not installed") then
+    print("Requires: " .. name .. rpm.expand("%{?_isa}") .. " >= " .. v .. "\n")
+  end
+end
+}
 
 %description
 The sign-in shared by Graph Sync, Graph Mail and the other apps of the suite:
@@ -85,6 +98,10 @@ Headers and the CMake package GraphCore, for building the apps of the suite.
 %{_libdir}/cmake/GraphCore/
 
 %changelog
+* Wed Nov 18 2026 nvaert1986 <25772781+nvaert1986@users.noreply.github.com> - 0.14.0-2
+- Require at least the Qt and KDE library versions the package was built against: on a
+  system that was not updated first it failed with "undefined symbol"
+
 * Tue Nov 17 2026 nvaert1986 <25772781+nvaert1986@users.noreply.github.com> - 0.14.0-1
 - First packaged release: the account service, System Settings > Microsoft 365 Accounts, the
   system's proxy, clear error messages, one "Sign in again" notification for the suite
